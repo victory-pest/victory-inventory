@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(openssl rand *)",
+      "Bash(npm --version)",
+      "Bash(mkdir -p /tmp/victory-backup)",
+      "Bash(cp /c/victory-inventory/CLAUDE.md /tmp/victory-backup/)",
+      "Bash(cp /c/victory-inventory/Victory_logo.png /tmp/victory-backup/)",
+      "Read(//tmp/**)",
+      "Bash(rm Victory_logo.png)",
+      "Bash(npx --yes create-next-app@latest . --typescript --tailwind --app --eslint --no-src-dir --import-alias \"@/*\" --use-npm --yes)"
+    ]
+  }
+}
