@@ -29,13 +29,13 @@ export function BottomNav({ role }: Props) {
               <Link
                 href={item.href}
                 className={cn(
-                  "flex flex-col items-center justify-center gap-1 py-2.5 text-xs font-medium transition-colors",
+                  "flex flex-col items-center justify-center gap-0.5 py-2 text-[10px] font-medium transition-colors",
                   active
                     ? "text-brand-primary"
                     : "text-brand-dark/60 hover:text-brand-dark",
                 )}
               >
-                <Icon className={cn("h-6 w-6", active && "stroke-[2.5]")} />
+                <Icon className={cn("h-5 w-5", active && "stroke-[2.5]")} />
                 <span className="leading-none">{item.label}</span>
               </Link>
             </li>
