@@ -3,16 +3,19 @@ import { prisma } from "./prisma";
 
 export async function getTenant() {
   const headersList = await headers();
-  const domain = headersList.get("x-tenant-domain") || "localhost";
+  const host = (headersList.get("host") || "localhost").toLowerCase().split(":")[0];
 
-  if (domain === "localhost" || domain === "127.0.0.1") {
+  // Single-tenant fallback: localhost (dev) or Vercel preview/prod (*.vercel.app)
+  if (
+    host === "localhost" ||
+    host === "127.0.0.1" ||
+    host.endsWith(".vercel.app")
+  ) {
     return prisma.company.findFirst({ where: { active: true } });
   }
 
-  const parts = domain.split(".");
-  const baseDomain = parts.length >= 2 ? parts.slice(-2).join(".") : domain;
-
-  return prisma.company.findUnique({ where: { domain: baseDomain } });
+  // Custom production domain: exact match on the company.domain field
+  return prisma.company.findFirst({ where: { domain: host, active: true } });
 }
 
 export async function requireTenant() {
