@@ -8,7 +8,32 @@
       "Bash(cp /c/victory-inventory/Victory_logo.png /tmp/victory-backup/)",
       "Read(//tmp/**)",
       "Bash(rm Victory_logo.png)",
-      "Bash(npx --yes create-next-app@latest . --typescript --tailwind --app --eslint --no-src-dir --import-alias \"@/*\" --use-npm --yes)"
+      "Bash(npx --yes create-next-app@latest . --typescript --tailwind --app --eslint --no-src-dir --import-alias \"@/*\" --use-npm --yes)",
+      "Bash(cp /tmp/victory-backup/Victory_logo.png /c/victory-inventory/public/logos/Victory_logo.png)",
+      "Bash(cp /tmp/victory-backup/CLAUDE.md /c/victory-inventory/CLAUDE.md)",
+      "Bash(mkdir -p \"/c/Users/Juan Prieto/.claude/projects/C--victory-inventory/memory\")",
+      "Read(//c/Users/Juan Prieto/.claude/projects/C--victory-inventory/**)",
+      "Bash(npm install *)",
+      "Bash(npx --yes shadcn@latest init --yes)",
+      "Bash(npx --yes shadcn@latest init --yes -c Radix)",
+      "Bash(npx --yes shadcn@latest init --help)",
+      "Bash(npx --yes shadcn@latest init -t next -b radix --no-monorepo --yes --force)",
+      "Bash(npx --yes shadcn@latest init -t next -b radix --no-monorepo -p nova --yes --force)",
+      "Bash(npx --yes shadcn@latest add card input label select table badge dialog sheet dropdown-menu avatar form tabs separator skeleton sonner --yes --force)",
+      "Bash(npx --yes shadcn@latest add card input label select table badge dialog sheet dropdown-menu avatar form tabs separator skeleton sonner --yes)",
+      "Bash(npx --yes shadcn@latest add form --yes)",
+      "Bash(npx *)",
+      "Bash(npm run *)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:3000/login)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:3000/)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:3000/api/auth/csrf)",
+      "PowerShell(Remove-Item *)",
+      "PowerShell(Get-NetTCPConnection *)",
+      "Bash(npm ls *)",
+      "Bash(tasklist)",
+      "Bash(cat next.config.ts)",
+      "Bash(cat next.config.js)",
+      "Bash(cat next.config.mjs)"
     ]
   }
 }

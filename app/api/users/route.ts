@@ -1,0 +1,90 @@
+import { NextRequest, NextResponse } from "next/server";
+import bcrypt from "bcryptjs";
+import { z } from "zod";
+import { prisma } from "@/lib/prisma";
+import { requireApiSession, badRequest, forbidden } from "@/lib/api";
+import { isManagerLike } from "@/lib/permissions";
+
+export async function GET() {
+  const auth = await requireApiSession();
+  if ("error" in auth) return auth.error;
+  if (!isManagerLike(auth.session.user.role)) return forbidden("Manager only");
+
+  const users = await prisma.user.findMany({
+    where: { companyId: auth.session.user.companyId },
+    include: {
+      location: { select: { id: true, name: true } },
+      licenses: { select: { licenseTypeId: true } },
+    },
+    orderBy: { name: "asc" },
+  });
+  return NextResponse.json({
+    users: users.map((u) => ({
+      id: u.id,
+      name: u.name,
+      email: u.email,
+      username: u.username,
+      role: u.role,
+      locationId: u.locationId,
+      locationName: u.location?.name ?? null,
+      active: u.active,
+      hasCompanyEmail: u.hasCompanyEmail,
+      licenseIds: u.licenses.map((l) => l.licenseTypeId),
+    })),
+  });
+}
+
+const schema = z.object({
+  name: z.string().min(1).max(120),
+  email: z.string().email().optional().nullable(),
+  username: z.string().min(2).max(60).optional().nullable(),
+  role: z.enum(["super_admin", "manager", "supervisor", "technician"]),
+  locationId: z.string().nullable().optional(),
+  licenseIds: z.array(z.string()).default([]),
+  password: z.string().min(6).max(120),
+  active: z.boolean().optional(),
+});
+
+export async function POST(req: NextRequest) {
+  const auth = await requireApiSession();
+  if ("error" in auth) return auth.error;
+  if (!isManagerLike(auth.session.user.role)) return forbidden("Manager only");
+
+  const body = await req.json().catch(() => null);
+  const parsed = schema.safeParse(body);
+  if (!parsed.success) return badRequest("invalid_body", parsed.error.format());
+
+  const data = parsed.data;
+  if (data.role === "technician" && !data.username) {
+    return badRequest("Technicians must have a username");
+  }
+  if (data.role !== "technician" && !data.email) {
+    return badRequest("This role requires an email");
+  }
+
+  if (data.locationId) {
+    const loc = await prisma.location.findFirst({
+      where: { id: data.locationId, companyId: auth.session.user.companyId },
+    });
+    if (!loc) return badRequest("Invalid location");
+  }
+
+  const passwordHash = await bcrypt.hash(data.password, 10);
+  const user = await prisma.user.create({
+    data: {
+      companyId: auth.session.user.companyId,
+      name: data.name,
+      email: data.email ?? null,
+      username: data.username ?? null,
+      role: data.role,
+      locationId: data.locationId ?? null,
+      hasCompanyEmail: !!data.email,
+      passwordHash,
+      active: data.active ?? true,
+      licenses: {
+        create: data.licenseIds.map((licenseTypeId) => ({ licenseTypeId })),
+      },
+    },
+  });
+  return NextResponse.json({ user: { id: user.id } }, { status: 201 });
+}

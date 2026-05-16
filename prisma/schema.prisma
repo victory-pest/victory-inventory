@@ -1,0 +1,487 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Company {
+  id                    String   @id @default(uuid())
+  name                  String
+  domain                String   @unique
+  logoUrl               String?
+  primaryColor          String   @default("#1565C0")
+  secondaryColor        String   @default("#29ABE2")
+  active                Boolean  @default(true)
+  truckInventoryEnabled Boolean  @default(false)
+  notificationSettings  Json?
+  createdAt             DateTime @default(now())
+
+  locations             Location[]
+  users                 User[]
+  products              Product[]
+  productCategories     ProductCategory[]
+  unitsOfMeasure        UnitOfMeasure[]
+  suppliers             Supplier[]
+  licenseTypes          LicenseType[]
+  supervisorPermissions SupervisorPermissions?
+  requests              Request[]
+  stockMovements        StockMovement[]
+  receptions            Reception[]
+  transfers             Transfer[]
+  physicalCounts        PhysicalCount[]
+  notifications         Notification[]
+
+  @@map("companies")
+}
+
+model Location {
+  id        String   @id @default(uuid())
+  companyId String
+  name      String
+  address   String?
+  city      String?
+  state     String?
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  company          Company           @relation(fields: [companyId], references: [id])
+  users            User[]
+  locationProducts LocationProduct[]
+  stock            Stock[]
+  requests         Request[]
+  stockMovements   StockMovement[]
+  receptions       Reception[]
+  transfersFrom    Transfer[]        @relation("TransferFrom")
+  transfersTo      Transfer[]        @relation("TransferTo")
+  physicalCounts   PhysicalCount[]
+
+  @@map("locations")
+}
+
+model LicenseType {
+  id        String  @id @default(uuid())
+  companyId String
+  name      String
+  active    Boolean @default(true)
+
+  company         Company          @relation(fields: [companyId], references: [id])
+  userLicenses    UserLicense[]
+  productLicenses ProductLicense[]
+
+  @@map("license_types")
+}
+
+model User {
+  id              String   @id @default(uuid())
+  companyId       String
+  locationId      String?
+  name            String
+  email           String?
+  username        String?  @unique
+  passwordHash    String
+  role            Role
+  hasCompanyEmail Boolean  @default(false)
+  active          Boolean  @default(true)
+  createdAt       DateTime @default(now())
+
+  company            Company            @relation(fields: [companyId], references: [id])
+  location           Location?          @relation(fields: [locationId], references: [id])
+  licenses           UserLicense[]
+  requestsCreated    Request[]          @relation("TechnicianRequests")
+  requestsApproved   Request[]          @relation("ApprovedRequests")
+  stockMovements     StockMovement[]
+  receptionsReceived Reception[]
+  transfersRequested Transfer[]         @relation("TransferRequested")
+  transfersApproved  Transfer[]         @relation("TransferApproved")
+  physicalCounts     PhysicalCount[]
+  notifications      Notification[]
+  pushSubscriptions  PushSubscription[]
+  truckInventory     TruckInventory[]
+
+  @@map("users")
+}
+
+enum Role {
+  super_admin
+  manager
+  supervisor
+  technician
+}
+
+model UserLicense {
+  id            String @id @default(uuid())
+  userId        String
+  licenseTypeId String
+
+  user        User        @relation(fields: [userId], references: [id])
+  licenseType LicenseType @relation(fields: [licenseTypeId], references: [id])
+
+  @@unique([userId, licenseTypeId])
+  @@map("user_licenses")
+}
+
+model SupervisorPermissions {
+  id                   String  @id @default(uuid())
+  companyId            String  @unique
+  canApproveRequests   Boolean @default(true)
+  canEditQuantities    Boolean @default(true)
+  canRejectRequests    Boolean @default(true)
+  canManageCatalog     Boolean @default(false)
+  canEditProducts      Boolean @default(false)
+  canAdjustStock       Boolean @default(true)
+  canReceiveStock      Boolean @default(true)
+  canViewReports       Boolean @default(true)
+  canManageTechnicians Boolean @default(false)
+  canTransferStock     Boolean @default(false)
+
+  company Company @relation(fields: [companyId], references: [id])
+
+  @@map("supervisor_permissions")
+}
+
+model ProductCategory {
+  id        String  @id @default(uuid())
+  companyId String
+  name      String
+  active    Boolean @default(true)
+
+  company  Company   @relation(fields: [companyId], references: [id])
+  products Product[]
+
+  @@map("product_categories")
+}
+
+model UnitOfMeasure {
+  id           String  @id @default(uuid())
+  companyId    String
+  name         String
+  abbreviation String?
+  active       Boolean @default(true)
+
+  company  Company   @relation(fields: [companyId], references: [id])
+  products Product[]
+
+  @@map("units_of_measure")
+}
+
+model Supplier {
+  id          String   @id @default(uuid())
+  companyId   String
+  name        String
+  contactName String?
+  email       String?
+  phone       String?
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  company    Company     @relation(fields: [companyId], references: [id])
+  products   Product[]
+  receptions Reception[]
+
+  @@map("suppliers")
+}
+
+model Product {
+  id              String   @id @default(uuid())
+  companyId       String
+  categoryId      String?
+  supplierId      String?
+  unitId          String?
+  name            String
+  sku             String?
+  unitCost        Decimal  @default(0) @db.Decimal(10, 2)
+  epaRegistration String?
+  photoUrl        String?
+  requiresLicense Boolean  @default(false)
+  active          Boolean  @default(true)
+  createdAt       DateTime @default(now())
+
+  company          Company             @relation(fields: [companyId], references: [id])
+  category         ProductCategory?    @relation(fields: [categoryId], references: [id])
+  supplier         Supplier?           @relation(fields: [supplierId], references: [id])
+  unit             UnitOfMeasure?      @relation(fields: [unitId], references: [id])
+  licenses         ProductLicense[]
+  locationProducts LocationProduct[]
+  stock            Stock[]
+  requestItems     RequestItem[]
+  stockMovements   StockMovement[]
+  receptionItems   ReceptionItem[]
+  transferItems    TransferItem[]
+  countItems       PhysicalCountItem[]
+  truckInventory   TruckInventory[]
+
+  @@map("products")
+}
+
+model ProductLicense {
+  id            String @id @default(uuid())
+  productId     String
+  licenseTypeId String
+
+  product     Product     @relation(fields: [productId], references: [id])
+  licenseType LicenseType @relation(fields: [licenseTypeId], references: [id])
+
+  @@unique([productId, licenseTypeId])
+  @@map("product_licenses")
+}
+
+model LocationProduct {
+  id         String  @id @default(uuid())
+  locationId String
+  productId  String
+  minStock   Decimal @default(0) @db.Decimal(10, 2)
+  maxStock   Decimal @default(0) @db.Decimal(10, 2)
+  active     Boolean @default(true)
+
+  location Location @relation(fields: [locationId], references: [id])
+  product  Product  @relation(fields: [productId], references: [id])
+
+  @@unique([locationId, productId])
+  @@map("location_products")
+}
+
+model Stock {
+  id         String   @id @default(uuid())
+  locationId String
+  productId  String
+  quantity   Decimal  @default(0) @db.Decimal(10, 2)
+  updatedAt  DateTime @default(now()) @updatedAt
+
+  location Location @relation(fields: [locationId], references: [id])
+  product  Product  @relation(fields: [productId], references: [id])
+
+  @@unique([locationId, productId])
+  @@map("stock")
+}
+
+model Request {
+  id            String        @id @default(uuid())
+  companyId     String
+  locationId    String
+  technicianId  String
+  status        RequestStatus @default(pending)
+  priority      Priority      @default(normal)
+  note          String?
+  rejectionNote String?
+  approvedBy    String?
+  approvedAt    DateTime?
+  pickedUpAt    DateTime?
+  createdAt     DateTime      @default(now())
+
+  company    Company       @relation(fields: [companyId], references: [id])
+  location   Location      @relation(fields: [locationId], references: [id])
+  technician User          @relation("TechnicianRequests", fields: [technicianId], references: [id])
+  approver   User?         @relation("ApprovedRequests", fields: [approvedBy], references: [id])
+  items      RequestItem[]
+
+  @@map("requests")
+}
+
+enum RequestStatus {
+  pending
+  approved
+  rejected
+  cancelled
+  picked_up
+}
+
+enum Priority {
+  urgent
+  high
+  normal
+  low
+}
+
+model RequestItem {
+  id                String   @id @default(uuid())
+  requestId         String
+  productId         String
+  quantityRequested Decimal  @db.Decimal(10, 2)
+  quantityApproved  Decimal? @db.Decimal(10, 2)
+  unitCostAtTime    Decimal  @default(0) @db.Decimal(10, 2)
+
+  request Request @relation(fields: [requestId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
+
+  @@map("request_items")
+}
+
+model StockMovement {
+  id           String       @id @default(uuid())
+  companyId    String
+  locationId   String
+  productId    String
+  movementType MovementType
+  quantity     Decimal      @db.Decimal(10, 2)
+  referenceId  String?
+  performedBy  String
+  note         String?
+  createdAt    DateTime     @default(now())
+
+  company  Company  @relation(fields: [companyId], references: [id])
+  location Location @relation(fields: [locationId], references: [id])
+  product  Product  @relation(fields: [productId], references: [id])
+  user     User     @relation(fields: [performedBy], references: [id])
+
+  @@map("stock_movements")
+}
+
+enum MovementType {
+  request_approval
+  reception
+  manual_adjustment
+  transfer_out
+  transfer_in
+  physical_count
+}
+
+model Reception {
+  id            String   @id @default(uuid())
+  companyId     String
+  locationId    String
+  supplierId    String?
+  invoiceNumber String?
+  receivedBy    String
+  receptionDate DateTime
+  createdAt     DateTime @default(now())
+
+  company  Company         @relation(fields: [companyId], references: [id])
+  location Location        @relation(fields: [locationId], references: [id])
+  supplier Supplier?       @relation(fields: [supplierId], references: [id])
+  receiver User            @relation(fields: [receivedBy], references: [id])
+  items    ReceptionItem[]
+
+  @@map("receptions")
+}
+
+model ReceptionItem {
+  id          String  @id @default(uuid())
+  receptionId String
+  productId   String
+  quantity    Decimal @db.Decimal(10, 2)
+  unitCost    Decimal @default(0) @db.Decimal(10, 2)
+
+  reception Reception @relation(fields: [receptionId], references: [id])
+  product   Product   @relation(fields: [productId], references: [id])
+
+  @@map("reception_items")
+}
+
+model Transfer {
+  id             String         @id @default(uuid())
+  companyId      String
+  fromLocationId String
+  toLocationId   String
+  requestedBy    String
+  approvedBy     String?
+  status         TransferStatus @default(pending)
+  note           String?
+  createdAt      DateTime       @default(now())
+
+  company      Company        @relation(fields: [companyId], references: [id])
+  fromLocation Location       @relation("TransferFrom", fields: [fromLocationId], references: [id])
+  toLocation   Location       @relation("TransferTo", fields: [toLocationId], references: [id])
+  requester    User           @relation("TransferRequested", fields: [requestedBy], references: [id])
+  approver     User?          @relation("TransferApproved", fields: [approvedBy], references: [id])
+  items        TransferItem[]
+
+  @@map("transfers")
+}
+
+enum TransferStatus {
+  pending
+  approved
+  rejected
+  completed
+}
+
+model TransferItem {
+  id                String   @id @default(uuid())
+  transferId        String
+  productId         String
+  quantityRequested Decimal  @db.Decimal(10, 2)
+  quantityApproved  Decimal? @db.Decimal(10, 2)
+  unitCostAtTime    Decimal  @default(0) @db.Decimal(10, 2)
+
+  transfer Transfer @relation(fields: [transferId], references: [id])
+  product  Product  @relation(fields: [productId], references: [id])
+
+  @@map("transfer_items")
+}
+
+model PhysicalCount {
+  id          String   @id @default(uuid())
+  companyId   String
+  locationId  String
+  performedBy String
+  countDate   DateTime
+  createdAt   DateTime @default(now())
+
+  company  Company             @relation(fields: [companyId], references: [id])
+  location Location            @relation(fields: [locationId], references: [id])
+  user     User                @relation(fields: [performedBy], references: [id])
+  items    PhysicalCountItem[]
+
+  @@map("physical_counts")
+}
+
+model PhysicalCountItem {
+  id               String  @id @default(uuid())
+  physicalCountId  String
+  productId        String
+  systemQuantity   Decimal @db.Decimal(10, 2)
+  countedQuantity  Decimal @db.Decimal(10, 2)
+  adjustmentReason String?
+
+  physicalCount PhysicalCount @relation(fields: [physicalCountId], references: [id])
+  product       Product       @relation(fields: [productId], references: [id])
+
+  @@map("physical_count_items")
+}
+
+model TruckInventory {
+  id        String   @id @default(uuid())
+  userId    String
+  productId String
+  quantity  Decimal  @default(0) @db.Decimal(10, 2)
+  updatedAt DateTime @default(now()) @updatedAt
+
+  user    User    @relation(fields: [userId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
+
+  @@unique([userId, productId])
+  @@map("truck_inventory")
+}
+
+model Notification {
+  id          String   @id @default(uuid())
+  userId      String
+  companyId   String
+  type        String
+  title       String
+  message     String?
+  read        Boolean  @default(false)
+  referenceId String?
+  createdAt   DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id])
+  company Company @relation(fields: [companyId], references: [id])
+
+  @@map("notifications")
+}
+
+model PushSubscription {
+  id        String   @id @default(uuid())
+  userId    String
+  endpoint  String
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("push_subscriptions")
+}
