@@ -193,9 +193,8 @@ model Product {
   name            String
   sku             String?
   unitCost        Decimal  @default(0) @db.Decimal(10, 2)
-  epaRegistration  String?
-  activeIngredient String?
-  photoUrl         String?
+  epaRegistration String?
+  photoUrl        String?
   requiresLicense Boolean  @default(false)
   active          Boolean  @default(true)
   createdAt       DateTime @default(now())

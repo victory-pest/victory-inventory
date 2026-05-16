@@ -14,7 +14,6 @@ export type CatalogProduct = {
   id: string;
   name: string;
   sku: string | null;
-  activeIngredient: string | null;
   photoUrl: string | null;
   requiresLicense: boolean;
   unitCost: number;
@@ -92,7 +91,6 @@ export async function getCatalog(q: CatalogQuery): Promise<{
           id: p.id,
           name: p.name,
           sku: p.sku,
-          activeIngredient: p.activeIngredient,
           photoUrl: p.photoUrl,
           requiresLicense: p.requiresLicense,
           unitCost: Number(p.unitCost),
