@@ -24,8 +24,6 @@ type Props = {
   locations: { id: string; name: string }[];
   showDate: boolean;
   showLocation: boolean;
-  activeFilter?: "active" | "inactive" | "all";
-  showActiveFilter?: boolean;
 };
 
 const presets: { value: DateRangePreset; label: string }[] = [
@@ -45,8 +43,6 @@ export function ReportFilters({
   locations,
   showDate,
   showLocation,
-  activeFilter,
-  showActiveFilter,
 }: Props) {
   const router = useRouter();
   const pathname = usePathname();
@@ -145,29 +141,6 @@ export function ReportFilters({
                   {l.name}
                 </SelectItem>
               ))}
-            </SelectContent>
-          </Select>
-        </div>
-      )}
-
-      {showActiveFilter && (
-        <div className="space-y-1.5">
-          <Label className="text-xs uppercase tracking-wide text-brand-dark/60">
-            Status
-          </Label>
-          <Select
-            value={activeFilter ?? "active"}
-            onValueChange={(v) =>
-              navigate({ active: v === "active" ? null : v })
-            }
-          >
-            <SelectTrigger className="w-[160px] bg-white">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="active">Active only</SelectItem>
-              <SelectItem value="inactive">Inactive only</SelectItem>
-              <SelectItem value="all">All products</SelectItem>
             </SelectContent>
           </Select>
         </div>
