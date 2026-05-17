@@ -51,6 +51,7 @@ export default async function ReportsPage({
     from?: string;
     to?: string;
     location?: string;
+    active?: string;
   }>;
 }) {
   const session = await getServerSession(authOptions);
@@ -64,6 +65,8 @@ export default async function ReportsPage({
 
   const sp = await searchParams;
   const allowedIds = definitions.map((d) => d.id);
+  const activeFilter: "active" | "inactive" | "all" =
+    sp.active === "inactive" ? "inactive" : sp.active === "all" ? "all" : "active";
   const type = safeReportType(sp.type, allowedIds);
   const rangePreset = safeRange(sp.range);
   const customFrom = sp.from ?? "";
@@ -93,6 +96,7 @@ export default async function ReportsPage({
     rangeStart: start,
     rangeEnd: end,
     locationId: effectiveLocationId,
+    activeFilter,
   });
 
   const locationName = effectiveLocationId
@@ -101,9 +105,19 @@ export default async function ReportsPage({
       ? "Your location"
       : "All locations";
 
-  const subtitle = def.needsDateRange
-    ? `${formatDateRange(start, end)} · ${locationName}`
-    : locationName;
+  let subtitle: string;
+  if (def.needsDateRange) {
+    subtitle = `${formatDateRange(start, end)} · ${locationName}`;
+  } else if (def.needsLocation ?? true) {
+    subtitle = locationName;
+  } else {
+    subtitle =
+      activeFilter === "active"
+        ? "Active products only"
+        : activeFilter === "inactive"
+          ? "Inactive products only"
+          : "All products";
+  }
 
   const filenameSafeTitle = def.title
     .toLowerCase()
@@ -139,7 +153,9 @@ export default async function ReportsPage({
               locationId={locationParam}
               locations={locations}
               showDate={def.needsDateRange}
-              showLocation={user.role !== "supervisor"}
+              showLocation={(def.needsLocation ?? true) && user.role !== "supervisor"}
+              activeFilter={activeFilter}
+              showActiveFilter={type === "catalog"}
             />
           </div>
 

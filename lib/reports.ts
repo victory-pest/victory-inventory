@@ -42,6 +42,7 @@ export type ReportDefinition = {
   managerOnly: boolean;
   needsDateRange: boolean;
   needsLocation?: boolean;
+  groupBy?: string;
   columns: ReportColumn[];
 };
 
@@ -53,6 +54,7 @@ export const REPORT_DEFINITIONS: ReportDefinition[] = [
     managerOnly: false,
     needsDateRange: false,
     needsLocation: false,
+    groupBy: "category",
     columns: [
       { key: "name", label: "Product" },
       { key: "sku", label: "SKU" },
@@ -356,6 +358,12 @@ async function runCatalogReport(filters: ReportFilters): Promise<ReportResult> {
     licenses: p.licenses.map((l) => l.licenseType.name).join(", "),
     status: p.active ? "active" : "inactive",
   }));
+
+  rows.sort(
+    (a, b) =>
+      String(a.category).localeCompare(String(b.category)) ||
+      String(a.name).localeCompare(String(b.name)),
+  );
 
   return { rows };
 }

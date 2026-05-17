@@ -8,7 +8,6 @@ import {
   StyleSheet,
   Image,
 } from "@react-pdf/renderer";
-import { Fragment } from "react";
 import type { ReportColumn, ReportRow } from "@/lib/reports";
 import { formatCell } from "./formatters";
 
@@ -87,7 +86,6 @@ type Props = {
   columns: ReportColumn[];
   rows: ReportRow[];
   generatedAt: string;
-  groupBy?: string;
 };
 
 export function ReportPdfDocument(props: Props) {
@@ -141,73 +139,36 @@ export function ReportPdfDocument(props: Props) {
               </Text>
             </View>
           ) : (
-            props.rows.map((row, idx) => {
-              const currentGroup = props.groupBy
-                ? String(row[props.groupBy] ?? "")
-                : "";
-              const prevGroup =
-                idx > 0 && props.groupBy
-                  ? String(props.rows[idx - 1][props.groupBy] ?? "")
-                  : "";
-              const isNewGroup =
-                !!props.groupBy && currentGroup !== prevGroup;
-              return (
-                <Fragment key={idx}>
-                  {isNewGroup && (
-                    <View
-                      style={{
-                        flexDirection: "row",
-                        backgroundColor: "#E3F2FD",
-                        borderTopWidth: 0.5,
-                        borderTopColor: "#1565C0",
-                        borderBottomWidth: 0.5,
-                        borderBottomColor: "#1565C0",
-                      }}
-                      wrap={false}
-                    >
-                      <Text
-                        style={{
-                          padding: 5,
-                          fontFamily: "Helvetica-Bold",
-                          color: "#1565C0",
-                          fontSize: 9,
-                          width: "100%",
-                        }}
-                      >
-                        {(currentGroup || "(uncategorized)").toUpperCase()}
-                      </Text>
-                    </View>
-                  )}
-                  <View
+            props.rows.map((row, idx) => (
+              <View
+                key={idx}
+                style={[
+                  styles.tableRow,
+                  { backgroundColor: idx % 2 === 0 ? "white" : "#FAFAFA" },
+                ]}
+                wrap={false}
+              >
+                {props.columns.map((c) => (
+                  <Text
+                    key={c.key}
                     style={[
-                      styles.tableRow,
-                      { backgroundColor: idx % 2 === 0 ? "white" : "#FAFAFA" },
+                      styles.td,
+                      {
+                        width: `${colWidth}%`,
+                        textAlign:
+                          c.align === "right"
+                            ? "right"
+                            : c.align === "center"
+                              ? "center"
+                              : "left",
+                      },
                     ]}
-                    wrap={false}
                   >
-                    {props.columns.map((c) => (
-                      <Text
-                        key={c.key}
-                        style={[
-                          styles.td,
-                          {
-                            width: `${colWidth}%`,
-                            textAlign:
-                              c.align === "right"
-                                ? "right"
-                                : c.align === "center"
-                                  ? "center"
-                                  : "left",
-                          },
-                        ]}
-                      >
-                        {formatCell(row[c.key], c.format)}
-                      </Text>
-                    ))}
-                  </View>
-                </Fragment>
-              );
-            })
+                    {formatCell(row[c.key], c.format)}
+                  </Text>
+                ))}
+              </View>
+            ))
           )}
         </View>
 

@@ -166,6 +166,7 @@ export default async function ReportsPage({
             columns={def.columns}
             rows={result.rows}
             filenameBase={filenameBase}
+            groupBy={def.groupBy}
           />
         </div>
       </div>

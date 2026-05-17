@@ -14,7 +14,6 @@ type Props = {
   columns: ReportColumn[];
   rows: ReportRow[];
   filenameBase: string;
-  groupBy?: string;
 };
 
 export function ExportButtons({
@@ -24,7 +23,6 @@ export function ExportButtons({
   columns,
   rows,
   filenameBase,
-  groupBy,
 }: Props) {
   const [pdfBusy, setPdfBusy] = useState(false);
   const [xlsxBusy, setXlsxBusy] = useState(false);
@@ -49,7 +47,6 @@ export function ExportButtons({
           columns={columns}
           rows={rows}
           generatedAt={new Date().toLocaleString()}
-          groupBy={groupBy}
         />,
       ).toBlob();
       triggerDownload(blob, `${filenameBase}.pdf`);
@@ -65,35 +62,25 @@ export function ExportButtons({
     setXlsxBusy(true);
     try {
       const XLSX = await import("xlsx");
-      const cellFor = (r: ReportRow, c: ReportColumn): string | number | Date => {
-        const raw = r[c.key];
-        if (c.format === "number" || c.format === "currency") return Number(raw ?? 0);
-        if (c.format === "percent") return Number(raw ?? 0);
-        if (c.format === "date" || c.format === "datetime") {
-          if (raw === null || raw === undefined || raw === "") return "";
-          try {
-            return new Date(String(raw));
-          } catch {
-            return String(raw);
-          }
-        }
-        return formatCell(raw, c.format);
-      };
-      const sheetRows: (string | number | Date)[][] = [
+      const sheetRows = [
         columns.map((c) => c.label),
+        ...rows.map((r) =>
+          columns.map((c) => {
+            const raw = r[c.key];
+            if (c.format === "number" || c.format === "currency") return Number(raw ?? 0);
+            if (c.format === "percent") return Number(raw ?? 0);
+            if (c.format === "date" || c.format === "datetime") {
+              if (raw === null || raw === undefined || raw === "") return "";
+              try {
+                return new Date(String(raw));
+              } catch {
+                return String(raw);
+              }
+            }
+            return formatCell(raw, c.format);
+          }),
+        ),
       ];
-      let prevGroup: string | undefined;
-      for (const r of rows) {
-        const currentGroup = groupBy ? String(r[groupBy] ?? "") : undefined;
-        if (groupBy && currentGroup !== prevGroup) {
-          sheetRows.push([
-            (currentGroup || "(uncategorized)").toUpperCase(),
-            ...Array(columns.length - 1).fill(""),
-          ]);
-          prevGroup = currentGroup;
-        }
-        sheetRows.push(columns.map((c) => cellFor(r, c)));
-      }
       const ws = XLSX.utils.aoa_to_sheet(sheetRows);
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, reportTitle.slice(0, 30));

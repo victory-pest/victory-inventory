@@ -1,6 +1,5 @@
 "use client";
 
-import { Fragment } from "react";
 import { cn } from "@/lib/utils";
 import {
   Table,
@@ -37,7 +36,6 @@ export function ReportTable({
 }: {
   columns: ReportColumn[];
   rows: ReportRow[];
-  groupBy?: string;
 }) {
   if (rows.length === 0) {
     return (
@@ -65,24 +63,8 @@ export function ReportTable({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {rows.map((r, idx) => {
-            const currentGroup = groupBy ? String(r[groupBy] ?? "") : "";
-            const prevGroup =
-              idx > 0 && groupBy ? String(rows[idx - 1][groupBy] ?? "") : "";
-            const isNewGroup = !!groupBy && currentGroup !== prevGroup;
-            return (
-              <Fragment key={idx}>
-                {isNewGroup && (
-                  <TableRow className="bg-brand-bg/60 hover:bg-brand-bg/60">
-                    <TableCell
-                      colSpan={columns.length}
-                      className="font-bold text-brand-primary uppercase text-xs tracking-wider py-2.5"
-                    >
-                      {currentGroup || "(uncategorized)"}
-                    </TableCell>
-                  </TableRow>
-                )}
-                <TableRow>
+          {rows.map((r, idx) => (
+            <TableRow key={idx}>
               {columns.map((c) => {
                 const value = r[c.key];
                 if (c.format === "status" || c.format === "priority") {
@@ -122,9 +104,7 @@ export function ReportTable({
                 );
               })}
             </TableRow>
-              </Fragment>
-            );
-          })}
+          ))}
         </TableBody>
       </Table>
     </div>

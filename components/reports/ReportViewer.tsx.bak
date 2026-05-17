@@ -10,7 +10,6 @@ type Props = {
   columns: ReportColumn[];
   rows: ReportRow[];
   filenameBase: string;
-  groupBy?: string;
 };
 
 export function ReportViewer({
@@ -20,7 +19,6 @@ export function ReportViewer({
   columns,
   rows,
   filenameBase,
-  groupBy,
 }: Props) {
   return (
     <div className="space-y-4">
@@ -41,7 +39,6 @@ export function ReportViewer({
           columns={columns}
           rows={rows}
           filenameBase={filenameBase}
-          groupBy={groupBy}
         />
       </div>
 
@@ -65,7 +62,7 @@ export function ReportViewer({
           </div>
         </div>
 
-        <ReportTable columns={columns} rows={rows} groupBy={groupBy} />
+        <ReportTable columns={columns} rows={rows} />
 
         <p className="hidden print:block text-[10px] text-brand-dark/50 mt-2">
           Generated on {new Date().toLocaleString()} · {rows.length} rows

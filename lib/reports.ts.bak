@@ -3,6 +3,7 @@ import type { Role } from "./nav";
 import { stockStatus } from "./inventory";
 
 export type ReportType =
+  | "catalog"
   | "stock"
   | "below-min"
   | "request-history"
@@ -40,10 +41,31 @@ export type ReportDefinition = {
   description: string;
   managerOnly: boolean;
   needsDateRange: boolean;
+  needsLocation?: boolean;
   columns: ReportColumn[];
 };
 
 export const REPORT_DEFINITIONS: ReportDefinition[] = [
+  {
+    id: "catalog",
+    title: "Product Catalog",
+    description: "Master list of products with all attributes, grouped by category",
+    managerOnly: false,
+    needsDateRange: false,
+    needsLocation: false,
+    columns: [
+      { key: "name", label: "Product" },
+      { key: "sku", label: "SKU" },
+      { key: "category", label: "Category" },
+      { key: "activeIngredient", label: "Active Ingredient" },
+      { key: "epaRegistration", label: "EPA Reg #" },
+      { key: "supplier", label: "Supplier" },
+      { key: "unit", label: "Unit" },
+      { key: "unitCost", label: "Unit Cost", align: "right", format: "currency" },
+      { key: "licenses", label: "Licenses" },
+      { key: "status", label: "Status", format: "status" },
+    ],
+  },
   {
     id: "stock",
     title: "Current Stock",
@@ -257,6 +279,7 @@ export type ReportFilters = {
   rangeStart: Date;
   rangeEnd: Date;
   locationId: string | null;
+  activeFilter?: "active" | "inactive" | "all";
 };
 
 export type ReportRow = Record<string, string | number | null>;
@@ -275,6 +298,8 @@ export async function runReport(
   filters: ReportFilters,
 ): Promise<ReportResult> {
   switch (type) {
+    case "catalog":
+      return runCatalogReport(filters);
     case "stock":
       return runStockReport(filters);
     case "below-min":
@@ -300,6 +325,39 @@ export async function runReport(
     case "transfer-history":
       return runTransferHistoryReport(filters);
   }
+}
+
+async function runCatalogReport(filters: ReportFilters): Promise<ReportResult> {
+  const activeFilter = filters.activeFilter ?? "active";
+  const products = await prisma.product.findMany({
+    where: {
+      companyId: filters.companyId,
+      ...(activeFilter === "active" ? { active: true } : {}),
+      ...(activeFilter === "inactive" ? { active: false } : {}),
+    },
+    include: {
+      category: { select: { name: true } },
+      supplier: { select: { name: true } },
+      unit: { select: { abbreviation: true, name: true } },
+      licenses: { include: { licenseType: { select: { name: true } } } },
+    },
+    orderBy: [{ category: { name: "asc" } }, { name: "asc" }],
+  });
+
+  const rows: ReportRow[] = products.map((p) => ({
+    name: p.name,
+    sku: p.sku ?? "",
+    category: p.category?.name ?? "",
+    activeIngredient: p.activeIngredient ?? "",
+    epaRegistration: p.epaRegistration ?? "",
+    supplier: p.supplier?.name ?? "",
+    unit: p.unit?.abbreviation ?? p.unit?.name ?? "",
+    unitCost: Number(p.unitCost),
+    licenses: p.licenses.map((l) => l.licenseType.name).join(", "),
+    status: p.active ? "active" : "inactive",
+  }));
+
+  return { rows };
 }
 
 async function runStockReport(filters: ReportFilters): Promise<ReportResult> {
