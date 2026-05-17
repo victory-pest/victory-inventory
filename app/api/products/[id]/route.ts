@@ -67,3 +67,54 @@ export async function PATCH(
 
   return NextResponse.json({ ok: true });
 }
+
+export async function DELETE(
+  _req: NextRequest,
+  ctx: { params: Promise<{ id: string }> },
+) {
+  const auth = await requireApiSession();
+  if ("error" in auth) return auth.error;
+  const user = auth.session.user;
+  if (!(await checkPermission(user.role, user.companyId)))
+    return forbidden("Product management not permitted");
+
+  const { id } = await ctx.params;
+  const existing = await prisma.product.findFirst({
+    where: { id, companyId: user.companyId },
+  });
+  if (!existing) return notFound("product_not_found");
+
+  // Block delete if product still has non-zero stock anywhere
+  const stockWithQty = await prisma.stock.findFirst({
+    where: { productId: id, quantity: { gt: 0 } },
+    select: { id: true },
+  });
+  if (stockWithQty) {
+    return NextResponse.json(
+      {
+        error:
+          "Cannot delete: product has non-zero stock. Adjust stock to 0 first, or use the Active toggle to deactivate.",
+      },
+      { status: 409 },
+    );
+  }
+
+  try {
+    await prisma.$transaction([
+      prisma.productLicense.deleteMany({ where: { productId: id } }),
+      prisma.stock.deleteMany({ where: { productId: id } }),
+      prisma.locationProduct.deleteMany({ where: { productId: id } }),
+      prisma.product.delete({ where: { id } }),
+    ]);
+  } catch {
+    return NextResponse.json(
+      {
+        error:
+          "Cannot delete: product has transactions (requests, receptions, adjustments, or transfers). Use the Active toggle to deactivate instead.",
+      },
+      { status: 409 },
+    );
+  }
+
+  return NextResponse.json({ ok: true });
+}
