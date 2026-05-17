@@ -128,25 +128,73 @@ export async function DELETE(
     }
   }
 
-  // Clean delete: wipe metadata/history first, then the product itself
-  // If force=true, also wipe transactional line items (admin override)
+  // Clean delete inside an interactive transaction so we can cascade orphan cleanup
   try {
-    await prisma.$transaction([
-      ...(force
-        ? [
-            prisma.requestItem.deleteMany({ where: { productId: id } }),
-            prisma.receptionItem.deleteMany({ where: { productId: id } }),
-            prisma.transferItem.deleteMany({ where: { productId: id } }),
-            prisma.physicalCountItem.deleteMany({ where: { productId: id } }),
-          ]
-        : []),
-      prisma.stockMovement.deleteMany({ where: { productId: id } }),
-      prisma.truckInventory.deleteMany({ where: { productId: id } }),
-      prisma.productLicense.deleteMany({ where: { productId: id } }),
-      prisma.stock.deleteMany({ where: { productId: id } }),
-      prisma.locationProduct.deleteMany({ where: { productId: id } }),
-      prisma.product.delete({ where: { id } }),
-    ]);
+    await prisma.$transaction(async (tx) => {
+      if (force) {
+        // 1) Capture parent ids BEFORE deleting items so we know which to check
+        const [reqItems, recItems, trItems, pcItems] = await Promise.all([
+          tx.requestItem.findMany({
+            where: { productId: id },
+            select: { requestId: true },
+            distinct: ["requestId"],
+          }),
+          tx.receptionItem.findMany({
+            where: { productId: id },
+            select: { receptionId: true },
+            distinct: ["receptionId"],
+          }),
+          tx.transferItem.findMany({
+            where: { productId: id },
+            select: { transferId: true },
+            distinct: ["transferId"],
+          }),
+          tx.physicalCountItem.findMany({
+            where: { productId: id },
+            select: { physicalCountId: true },
+            distinct: ["physicalCountId"],
+          }),
+        ]);
+        const reqParentIds = reqItems.map((r) => r.requestId);
+        const recParentIds = recItems.map((r) => r.receptionId);
+        const trParentIds = trItems.map((r) => r.transferId);
+        const pcParentIds = pcItems.map((p) => p.physicalCountId);
+
+        // 2) Wipe the line items
+        await tx.requestItem.deleteMany({ where: { productId: id } });
+        await tx.receptionItem.deleteMany({ where: { productId: id } });
+        await tx.transferItem.deleteMany({ where: { productId: id } });
+        await tx.physicalCountItem.deleteMany({ where: { productId: id } });
+
+        // 3) Delete parents that became empty (no items left for any product)
+        for (const rid of reqParentIds) {
+          const c = await tx.requestItem.count({ where: { requestId: rid } });
+          if (c === 0) await tx.request.delete({ where: { id: rid } });
+        }
+        for (const rid of recParentIds) {
+          const c = await tx.receptionItem.count({ where: { receptionId: rid } });
+          if (c === 0) await tx.reception.delete({ where: { id: rid } });
+        }
+        for (const tid of trParentIds) {
+          const c = await tx.transferItem.count({ where: { transferId: tid } });
+          if (c === 0) await tx.transfer.delete({ where: { id: tid } });
+        }
+        for (const pid of pcParentIds) {
+          const c = await tx.physicalCountItem.count({
+            where: { physicalCountId: pid },
+          });
+          if (c === 0) await tx.physicalCount.delete({ where: { id: pid } });
+        }
+      }
+
+      // 4) Always wipe metadata/history then the product itself
+      await tx.stockMovement.deleteMany({ where: { productId: id } });
+      await tx.truckInventory.deleteMany({ where: { productId: id } });
+      await tx.productLicense.deleteMany({ where: { productId: id } });
+      await tx.stock.deleteMany({ where: { productId: id } });
+      await tx.locationProduct.deleteMany({ where: { productId: id } });
+      await tx.product.delete({ where: { id } });
+    });
   } catch {
     return NextResponse.json(
       {
