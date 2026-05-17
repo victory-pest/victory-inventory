@@ -25,7 +25,7 @@ export function ReportSidebar({
 
   return (
     <>
-      <nav className="hidden md:block sticky top-20 self-start space-y-1">
+      <nav className="hidden md:block sticky top-20 self-start space-y-1 max-h-[calc(100vh-6rem)] overflow-y-auto pr-2">
         {sortedDefinitions.map((d) => (
           <Link
             key={d.id}
