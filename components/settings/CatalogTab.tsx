@@ -676,7 +676,25 @@ function ProductsSection({
   async function handleDelete(p: ProductRow) {
     if (!window.confirm(`Delete "${p.name}"?\n\nThis cannot be undone.`)) return;
     setDeletingId(p.id);
-    const res = await fetch(`/api/products/${p.id}`, { method: "DELETE" });
+
+    let res = await fetch(`/api/products/${p.id}`, { method: "DELETE" });
+
+    // If blocked by transactions, offer force delete to admins
+    if (res.status === 409) {
+      const data = await res.json().catch(() => ({}));
+      const forceConfirm = window.confirm(
+        `${data.error || "Delete blocked"}\n\nFORCE DELETE anyway?\n\nThis will permanently remove the product AND all related transaction history (request items, receptions, transfers, physical counts).\n\nThis cannot be undone.`,
+      );
+      if (!forceConfirm) {
+        setDeletingId(null);
+        toast.error("Delete cancelled");
+        return;
+      }
+      res = await fetch(`/api/products/${p.id}?force=true`, {
+        method: "DELETE",
+      });
+    }
+
     setDeletingId(null);
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));

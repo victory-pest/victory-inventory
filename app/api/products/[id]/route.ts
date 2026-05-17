@@ -69,7 +69,7 @@ export async function PATCH(
 }
 
 export async function DELETE(
-  _req: NextRequest,
+  req: NextRequest,
   ctx: { params: Promise<{ id: string }> },
 ) {
   const auth = await requireApiSession();
@@ -77,6 +77,11 @@ export async function DELETE(
   const user = auth.session.user;
   if (!(await checkPermission(user.role, user.companyId)))
     return forbidden("Product management not permitted");
+
+  const force = new URL(req.url).searchParams.get("force") === "true";
+  if (force && !isManagerLike(user.role as never)) {
+    return forbidden("Force delete requires manager role");
+  }
 
   const { id } = await ctx.params;
   const existing = await prisma.product.findFirst({
@@ -99,31 +104,42 @@ export async function DELETE(
     );
   }
 
-  // Block if product has real transactions (line items in requests/receptions/transfers/physical counts)
-  const [reqCount, recCount, trCount, pcCount] = await Promise.all([
-    prisma.requestItem.count({ where: { productId: id } }),
-    prisma.receptionItem.count({ where: { productId: id } }),
-    prisma.transferItem.count({ where: { productId: id } }),
-    prisma.physicalCountItem.count({ where: { productId: id } }),
-  ]);
-  const blockers: string[] = [];
-  if (reqCount > 0) blockers.push(`${reqCount} request item(s)`);
-  if (recCount > 0) blockers.push(`${recCount} reception item(s)`);
-  if (trCount > 0) blockers.push(`${trCount} transfer item(s)`);
-  if (pcCount > 0)
-    blockers.push(`${pcCount} physical count entr${pcCount === 1 ? "y" : "ies"}`);
-  if (blockers.length > 0) {
-    return NextResponse.json(
-      {
-        error: `Cannot delete: product is referenced in ${blockers.join(", ")}. Use the Active toggle to deactivate instead.`,
-      },
-      { status: 409 },
-    );
+  // Block if product has real transactions — UNLESS force=true (admin override)
+  if (!force) {
+    const [reqCount, recCount, trCount, pcCount] = await Promise.all([
+      prisma.requestItem.count({ where: { productId: id } }),
+      prisma.receptionItem.count({ where: { productId: id } }),
+      prisma.transferItem.count({ where: { productId: id } }),
+      prisma.physicalCountItem.count({ where: { productId: id } }),
+    ]);
+    const blockers: string[] = [];
+    if (reqCount > 0) blockers.push(`${reqCount} request item(s)`);
+    if (recCount > 0) blockers.push(`${recCount} reception item(s)`);
+    if (trCount > 0) blockers.push(`${trCount} transfer item(s)`);
+    if (pcCount > 0)
+      blockers.push(`${pcCount} physical count entr${pcCount === 1 ? "y" : "ies"}`);
+    if (blockers.length > 0) {
+      return NextResponse.json(
+        {
+          error: `Cannot delete: product is referenced in ${blockers.join(", ")}. Force delete (admin) or use the Active toggle to deactivate instead.`,
+        },
+        { status: 409 },
+      );
+    }
   }
 
   // Clean delete: wipe metadata/history first, then the product itself
+  // If force=true, also wipe transactional line items (admin override)
   try {
     await prisma.$transaction([
+      ...(force
+        ? [
+            prisma.requestItem.deleteMany({ where: { productId: id } }),
+            prisma.receptionItem.deleteMany({ where: { productId: id } }),
+            prisma.transferItem.deleteMany({ where: { productId: id } }),
+            prisma.physicalCountItem.deleteMany({ where: { productId: id } }),
+          ]
+        : []),
       prisma.stockMovement.deleteMany({ where: { productId: id } }),
       prisma.truckInventory.deleteMany({ where: { productId: id } }),
       prisma.productLicense.deleteMany({ where: { productId: id } }),
