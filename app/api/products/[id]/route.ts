@@ -99,8 +99,33 @@ export async function DELETE(
     );
   }
 
+  // Block if product has real transactions (line items in requests/receptions/transfers/physical counts)
+  const [reqCount, recCount, trCount, pcCount] = await Promise.all([
+    prisma.requestItem.count({ where: { productId: id } }),
+    prisma.receptionItem.count({ where: { productId: id } }),
+    prisma.transferItem.count({ where: { productId: id } }),
+    prisma.physicalCountItem.count({ where: { productId: id } }),
+  ]);
+  const blockers: string[] = [];
+  if (reqCount > 0) blockers.push(`${reqCount} request item(s)`);
+  if (recCount > 0) blockers.push(`${recCount} reception item(s)`);
+  if (trCount > 0) blockers.push(`${trCount} transfer item(s)`);
+  if (pcCount > 0)
+    blockers.push(`${pcCount} physical count entr${pcCount === 1 ? "y" : "ies"}`);
+  if (blockers.length > 0) {
+    return NextResponse.json(
+      {
+        error: `Cannot delete: product is referenced in ${blockers.join(", ")}. Use the Active toggle to deactivate instead.`,
+      },
+      { status: 409 },
+    );
+  }
+
+  // Clean delete: wipe metadata/history first, then the product itself
   try {
     await prisma.$transaction([
+      prisma.stockMovement.deleteMany({ where: { productId: id } }),
+      prisma.truckInventory.deleteMany({ where: { productId: id } }),
       prisma.productLicense.deleteMany({ where: { productId: id } }),
       prisma.stock.deleteMany({ where: { productId: id } }),
       prisma.locationProduct.deleteMany({ where: { productId: id } }),
@@ -110,7 +135,7 @@ export async function DELETE(
     return NextResponse.json(
       {
         error:
-          "Cannot delete: product has transactions (requests, receptions, adjustments, or transfers). Use the Active toggle to deactivate instead.",
+          "Cannot delete: unexpected reference to this product. Use the Active toggle to deactivate instead.",
       },
       { status: 409 },
     );
