@@ -34,6 +34,7 @@ const statusStyles: Record<string, string> = {
 export function ReportTable({
   columns,
   rows,
+  groupBy,
 }: {
   columns: ReportColumn[];
   rows: ReportRow[];
