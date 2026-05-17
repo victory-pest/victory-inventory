@@ -12,7 +12,6 @@ const schema = z.object({
   supplierId: z.string().nullable().optional(),
   unitCost: z.number().min(0).optional(),
   epaRegistration: z.string().max(60).nullable().optional(),
-  activeIngredient: z.string().max(500).nullable().optional(),
   photoUrl: z.string().url().nullable().optional(),
   requiresLicense: z.boolean().optional(),
   licenseTypeIds: z.array(z.string()).optional(),

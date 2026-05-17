@@ -53,7 +53,6 @@ export type ProductRow = {
   supplierId: string | null;
   unitCost: number;
   epaRegistration: string | null;
-  activeIngredient: string | null;
   photoUrl: string | null;
   requiresLicense: boolean;
   active: boolean;
@@ -778,9 +777,6 @@ function ProductDialog({
   const [supplierId, setSupplierId] = useState(row?.supplierId ?? "");
   const [unitCost, setUnitCost] = useState(row?.unitCost ?? 0);
   const [epa, setEpa] = useState(row?.epaRegistration ?? "");
-  const [activeIngredient, setActiveIngredient] = useState(
-    row?.activeIngredient ?? "",
-  );
   const [photoUrl, setPhotoUrl] = useState<string | null>(row?.photoUrl ?? null);
   const [requiresLicense, setRequiresLicense] = useState(
     row?.requiresLicense ?? false,
@@ -811,7 +807,6 @@ function ProductDialog({
       supplierId: supplierId || null,
       unitCost: Number(unitCost) || 0,
       epaRegistration: epa.trim() || null,
-      activeIngredient: activeIngredient.trim() || null,
       photoUrl,
       requiresLicense,
       licenseTypeIds: requiresLicense ? licenseIds : [],
@@ -924,19 +919,9 @@ function ProductDialog({
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label>EPA registration</Label>
-              <Input value={epa} onChange={(e) => setEpa(e.target.value)} />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Active ingredient</Label>
-              <Input
-                value={activeIngredient}
-                onChange={(e) => setActiveIngredient(e.target.value)}
-                placeholder="e.g. Fipronil 9.1%"
-              />
-            </div>
+          <div className="space-y-1.5">
+            <Label>EPA registration</Label>
+            <Input value={epa} onChange={(e) => setEpa(e.target.value)} />
           </div>
 
           <ImageUpload
