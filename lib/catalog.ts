@@ -20,6 +20,8 @@ export type CatalogProduct = {
   unitCost: number;
   category: { id: string; name: string } | null;
   unit: { id: string; name: string; abbreviation: string | null } | null;
+  purchaseUnit: { name: string; abbreviation: string | null } | null;
+  unitsPerPurchase: number;
   locationId: string | null;
   stock: number;
   minStock: number;
@@ -67,6 +69,7 @@ export async function getCatalog(q: CatalogQuery): Promise<{
     include: {
       category: { select: { id: true, name: true } },
       unit: { select: { id: true, name: true, abbreviation: true } },
+      purchaseUnit: { select: { name: true, abbreviation: true } },
       licenses: { select: { licenseTypeId: true } },
       stock: q.locationId
         ? { where: { locationId: q.locationId } }
@@ -98,6 +101,8 @@ export async function getCatalog(q: CatalogQuery): Promise<{
           unitCost: Number(p.unitCost),
           category: p.category,
           unit: p.unit,
+          purchaseUnit: p.purchaseUnit,
+          unitsPerPurchase: Number(p.unitsPerPurchase),
           locationId: q.locationId,
           stock: stockRow ? Number(stockRow.quantity) : 0,
           minStock: lp ? Number(lp.minStock) : 0,
