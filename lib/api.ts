@@ -11,6 +11,7 @@ export type ApiSession = {
     role: Role;
     companyId: string;
     locationId: string | null;
+    supervisedLocationIds: string[];
     licenseIds: string[];
   };
 };
