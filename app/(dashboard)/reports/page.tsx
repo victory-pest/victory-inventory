@@ -82,9 +82,15 @@ export default async function ReportsPage({
     orderBy: { name: "asc" },
   });
 
+  const availableLocations =
+    user.role === "supervisor"
+      ? locations.filter((l) => user.supervisedLocationIds.includes(l.id))
+      : locations;
   const effectiveLocationId =
     user.role === "supervisor"
-      ? user.locationId ?? null
+      ? locationParam && availableLocations.some((l) => l.id === locationParam)
+        ? locationParam
+        : (user.supervisedLocationIds[0] ?? null)
       : locationParam && locations.some((l) => l.id === locationParam)
         ? locationParam
         : null;
@@ -92,7 +98,10 @@ export default async function ReportsPage({
   const result = await runReport(type, {
     companyId: user.companyId,
     role: user.role,
-    userLocationId: user.locationId ?? null,
+    userLocationId:
+      user.role === "supervisor"
+        ? effectiveLocationId
+        : user.locationId ?? null,
     rangeStart: start,
     rangeEnd: end,
     locationId: effectiveLocationId,
@@ -151,9 +160,13 @@ export default async function ReportsPage({
               customFrom={customFrom}
               customTo={customTo}
               locationId={locationParam}
-              locations={locations}
+              locations={availableLocations}
               showDate={def.needsDateRange}
-              showLocation={(def.needsLocation ?? true) && user.role !== "supervisor"}
+              showLocation={
+                (def.needsLocation ?? true) &&
+                (user.role !== "supervisor" ||
+                  user.supervisedLocationIds.length > 1)
+              }
               activeFilter={activeFilter}
               showActiveFilter={type === "catalog"}
             />

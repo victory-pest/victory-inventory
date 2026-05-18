@@ -19,12 +19,12 @@ export default async function TransfersPage() {
   }
 
   const where =
-    user.role === "supervisor" && user.locationId
+    user.role === "supervisor"
       ? {
           companyId: user.companyId,
           OR: [
-            { fromLocationId: user.locationId },
-            { toLocationId: user.locationId },
+            { fromLocationId: { in: user.supervisedLocationIds } },
+            { toLocationId: { in: user.supervisedLocationIds } },
           ],
         }
       : { companyId: user.companyId };

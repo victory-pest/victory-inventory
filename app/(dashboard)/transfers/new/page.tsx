@@ -62,8 +62,11 @@ export default async function NewTransferPage() {
     stockByLocation: stockIndex[p.id] ?? {},
   }));
 
-  const defaultFromId =
-    (user.role === "supervisor" && user.locationId) || locations[0].id;
+  const accessibleLocations =
+    user.role === "supervisor"
+      ? locations.filter((l) => user.supervisedLocationIds.includes(l.id))
+      : locations;
+  const defaultFromId = accessibleLocations[0]?.id ?? locations[0].id;
 
   return (
     <div className="space-y-4">
@@ -77,10 +80,10 @@ export default async function NewTransferPage() {
       </div>
 
       <TransferForm
-        locations={locations}
+        locations={accessibleLocations}
         products={productPayload}
         defaultFromId={defaultFromId}
-        lockFrom={user.role === "supervisor"}
+        lockFrom={accessibleLocations.length === 1}
       />
     </div>
   );

@@ -19,8 +19,11 @@ export default async function ReceptionsPage() {
   }
 
   const where =
-    user.role === "supervisor" && user.locationId
-      ? { companyId: user.companyId, locationId: user.locationId }
+    user.role === "supervisor"
+      ? {
+          companyId: user.companyId,
+          locationId: { in: user.supervisedLocationIds },
+        }
       : { companyId: user.companyId };
 
   const receptions = await prisma.reception.findMany({

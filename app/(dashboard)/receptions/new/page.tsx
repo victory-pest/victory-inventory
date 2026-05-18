@@ -42,8 +42,11 @@ export default async function NewReceptionPage() {
     }),
   ]);
 
-  const defaultLocation =
-    (user.role === "supervisor" && user.locationId) || locations[0]?.id;
+  const accessibleLocations =
+    user.role === "supervisor"
+      ? locations.filter((l) => user.supervisedLocationIds.includes(l.id))
+      : locations;
+  const defaultLocation = accessibleLocations[0]?.id;
   if (!defaultLocation) redirect("/receptions");
 
   return (
@@ -58,7 +61,7 @@ export default async function NewReceptionPage() {
       </div>
 
       <ReceptionForm
-        locations={locations}
+        locations={accessibleLocations}
         suppliers={suppliers}
         products={products.map((p) => ({
           id: p.id,
@@ -70,7 +73,7 @@ export default async function NewReceptionPage() {
           unitsPerPurchase: Number(p.unitsPerPurchase),
         }))}
         defaultLocationId={defaultLocation}
-        lockLocation={user.role === "supervisor"}
+        lockLocation={accessibleLocations.length === 1}
       />
     </div>
   );
