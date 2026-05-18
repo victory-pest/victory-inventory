@@ -9,6 +9,7 @@ declare module "next-auth" {
       role: "super_admin" | "manager" | "supervisor" | "technician";
       companyId: string;
       locationId?: string | null;
+      supervisedLocationIds: string[];
       licenseIds: string[];
     } & DefaultSession["user"];
   }
@@ -20,6 +21,7 @@ declare module "next-auth" {
     role: "super_admin" | "manager" | "supervisor" | "technician";
     companyId: string;
     locationId?: string | null;
+    supervisedLocationIds: string[];
     licenseIds: string[];
   }
 }
@@ -30,6 +32,7 @@ declare module "next-auth/jwt" {
     role: "super_admin" | "manager" | "supervisor" | "technician";
     companyId: string;
     locationId?: string | null;
+    supervisedLocationIds: string[];
     licenseIds: string[];
   }
 }

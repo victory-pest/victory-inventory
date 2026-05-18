@@ -42,6 +42,7 @@ export type UserRow = {
   role: Role;
   locationId: string | null;
   locationName: string | null;
+  supervisedLocationIds: string[];
   active: boolean;
   licenseIds: string[];
 };
@@ -103,7 +104,19 @@ export function UsersTab({ users, locations, licenseTypes }: Props) {
                       {u.email ?? u.username ?? "—"}
                     </TableCell>
                     <TableCell>{roleLabels[u.role]}</TableCell>
-                    <TableCell>{u.locationName ?? "—"}</TableCell>
+                    <TableCell>
+                      {u.role === "supervisor"
+                        ? u.supervisedLocationIds.length === 0
+                          ? "—"
+                          : u.supervisedLocationIds
+                              .map(
+                                (id) =>
+                                  locations.find((l) => l.id === id)?.name,
+                              )
+                              .filter(Boolean)
+                              .join(", ")
+                        : (u.locationName ?? "—")}
+                    </TableCell>
                     <TableCell>
                       <Badge
                         variant="outline"
@@ -165,10 +178,19 @@ function UserDialog({
   const [locationId, setLocationId] = useState<string>(
     row?.locationId ?? (locations[0]?.id ?? ""),
   );
+  const [supervisedLocationIds, setSupervisedLocationIds] = useState<string[]>(
+    row?.supervisedLocationIds ?? [],
+  );
   const [licenseIds, setLicenseIds] = useState<string[]>(row?.licenseIds ?? []);
   const [password, setPassword] = useState("");
   const [active, setActive] = useState(row?.active ?? true);
   const [saving, setSaving] = useState(false);
+
+  function toggleSupervisedLocation(id: string) {
+    setSupervisedLocationIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+    );
+  }
 
   function toggleLicense(id: string) {
     setLicenseIds((prev) =>
@@ -193,6 +215,10 @@ function UserDialog({
       toast.error("This role requires an email");
       return;
     }
+    if (role === "supervisor" && supervisedLocationIds.length === 0) {
+      toast.error("Supervisors need at least one location");
+      return;
+    }
 
     setSaving(true);
     const payload: Record<string, unknown> = {
@@ -200,7 +226,8 @@ function UserDialog({
       email: email.trim() || null,
       username: username.trim() || null,
       role,
-      locationId: locationId || null,
+      locationId: role === "supervisor" ? null : (locationId || null),
+      supervisedLocationIds: role === "supervisor" ? supervisedLocationIds : [],
       licenseIds,
       active,
     };
@@ -240,21 +267,46 @@ function UserDialog({
             <Label>Name *</Label>
             <Input value={name} onChange={(e) => setName(e.target.value)} />
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label>Role</Label>
-              <Select value={role} onValueChange={(v) => setRole(v as Role)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="manager">Manager</SelectItem>
-                  <SelectItem value="supervisor">Supervisor</SelectItem>
-                  <SelectItem value="technician">Technician</SelectItem>
-                  <SelectItem value="super_admin">Super Admin</SelectItem>
-                </SelectContent>
-              </Select>
+          <div className="space-y-1.5">
+            <Label>Role</Label>
+            <Select value={role} onValueChange={(v) => setRole(v as Role)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="manager">Manager</SelectItem>
+                <SelectItem value="supervisor">Supervisor</SelectItem>
+                <SelectItem value="technician">Technician</SelectItem>
+                <SelectItem value="super_admin">Super Admin</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          {role === "supervisor" ? (
+            <div className="space-y-2">
+              <Label>Supervised locations *</Label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 rounded-md border p-3">
+                {locations.length === 0 ? (
+                  <p className="text-xs text-brand-dark/60">
+                    No active locations available.
+                  </p>
+                ) : (
+                  locations.map((l) => (
+                    <label
+                      key={l.id}
+                      className="flex items-center gap-2 text-sm"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={supervisedLocationIds.includes(l.id)}
+                        onChange={() => toggleSupervisedLocation(l.id)}
+                      />
+                      {l.name}
+                    </label>
+                  ))
+                )}
+              </div>
             </div>
+          ) : (
             <div className="space-y-1.5">
               <Label>Location</Label>
               <Select
@@ -274,7 +326,7 @@ function UserDialog({
                 </SelectContent>
               </Select>
             </div>
-          </div>
+          )}
           {!isTech && (
             <div className="space-y-1.5">
               <Label>Email *</Label>

@@ -13,6 +13,7 @@ const schema = z.object({
     .enum(["super_admin", "manager", "supervisor", "technician"])
     .optional(),
   locationId: z.string().nullable().optional(),
+  supervisedLocationIds: z.array(z.string()).optional(),
   licenseIds: z.array(z.string()).optional(),
   password: z.string().min(6).max(120).optional(),
   active: z.boolean().optional(),
@@ -52,10 +53,40 @@ export async function PATCH(
   }
   if (data.username !== undefined) updateData.username = data.username;
   if (data.role !== undefined) updateData.role = data.role;
-  if (data.locationId !== undefined) updateData.locationId = data.locationId;
   if (data.active !== undefined) updateData.active = data.active;
   if (data.password) {
     updateData.passwordHash = await bcrypt.hash(data.password, 10);
+  }
+
+  // Resolve effective role: from payload or existing
+  const effectiveRole = data.role ?? existing.role;
+  const willBeSupervisor = effectiveRole === "supervisor";
+
+  if (willBeSupervisor) {
+    // Determine the array: from payload if provided, else existing
+    const newSupervised =
+      data.supervisedLocationIds !== undefined
+        ? data.supervisedLocationIds
+        : existing.supervisedLocationIds;
+    if (!newSupervised || newSupervised.length === 0) {
+      return badRequest("Supervisors must have at least one location");
+    }
+    // Validate all locations belong to company
+    const locs = await prisma.location.findMany({
+      where: {
+        id: { in: newSupervised },
+        companyId: auth.session.user.companyId,
+      },
+    });
+    if (locs.length !== newSupervised.length) {
+      return badRequest("Invalid supervised location(s)");
+    }
+    updateData.supervisedLocationIds = newSupervised;
+    updateData.locationId = null;
+  } else {
+    // Non-supervisor: clear supervisedLocationIds, use locationId
+    updateData.supervisedLocationIds = [];
+    if (data.locationId !== undefined) updateData.locationId = data.locationId;
   }
 
   await prisma.user.update({ where: { id }, data: updateData });

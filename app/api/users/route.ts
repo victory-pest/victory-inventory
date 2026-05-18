@@ -27,6 +27,7 @@ export async function GET() {
       role: u.role,
       locationId: u.locationId,
       locationName: u.location?.name ?? null,
+      supervisedLocationIds: u.supervisedLocationIds,
       active: u.active,
       hasCompanyEmail: u.hasCompanyEmail,
       licenseIds: u.licenses.map((l) => l.licenseTypeId),
@@ -40,6 +41,7 @@ const schema = z.object({
   username: z.string().min(2).max(60).optional().nullable(),
   role: z.enum(["super_admin", "manager", "supervisor", "technician"]),
   locationId: z.string().nullable().optional(),
+  supervisedLocationIds: z.array(z.string()).default([]),
   licenseIds: z.array(z.string()).default([]),
   password: z.string().min(6).max(120),
   active: z.boolean().optional(),
@@ -69,6 +71,22 @@ export async function POST(req: NextRequest) {
     if (!loc) return badRequest("Invalid location");
   }
 
+  const isSupervisor = data.role === "supervisor";
+  if (isSupervisor) {
+    if (data.supervisedLocationIds.length === 0) {
+      return badRequest("Supervisors must have at least one location");
+    }
+    const locs = await prisma.location.findMany({
+      where: {
+        id: { in: data.supervisedLocationIds },
+        companyId: auth.session.user.companyId,
+      },
+    });
+    if (locs.length !== data.supervisedLocationIds.length) {
+      return badRequest("Invalid supervised location(s)");
+    }
+  }
+
   const passwordHash = await bcrypt.hash(data.password, 10);
   const user = await prisma.user.create({
     data: {
@@ -77,7 +95,8 @@ export async function POST(req: NextRequest) {
       email: data.email ?? null,
       username: data.username ?? null,
       role: data.role,
-      locationId: data.locationId ?? null,
+      locationId: isSupervisor ? null : (data.locationId ?? null),
+      supervisedLocationIds: isSupervisor ? data.supervisedLocationIds : [],
       hasCompanyEmail: !!data.email,
       passwordHash,
       active: data.active ?? true,

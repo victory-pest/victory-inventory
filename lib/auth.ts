@@ -39,6 +39,7 @@ export const authOptions: NextAuthOptions = {
           role: user.role,
           companyId: user.companyId,
           locationId: user.locationId ?? null,
+          supervisedLocationIds: user.supervisedLocationIds ?? [],
           licenseIds: user.licenses.map((l) => l.licenseTypeId),
         };
       },
@@ -51,6 +52,7 @@ export const authOptions: NextAuthOptions = {
         token.role = user.role;
         token.companyId = user.companyId;
         token.locationId = user.locationId;
+        token.supervisedLocationIds = user.supervisedLocationIds;
         token.licenseIds = user.licenseIds;
       }
       return token;
@@ -65,6 +67,8 @@ export const authOptions: NextAuthOptions = {
           | "technician";
         session.user.companyId = token.companyId as string;
         session.user.locationId = (token.locationId as string | null) ?? null;
+        session.user.supervisedLocationIds =
+          (token.supervisedLocationIds as string[]) ?? [];
         session.user.licenseIds = (token.licenseIds as string[]) ?? [];
       }
       return session;

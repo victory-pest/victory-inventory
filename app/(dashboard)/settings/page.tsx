@@ -132,6 +132,7 @@ async function renderUsersTab(companyId: string) {
     role: u.role,
     locationId: u.locationId,
     locationName: u.location?.name ?? null,
+    supervisedLocationIds: u.supervisedLocationIds,
     active: u.active,
     licenseIds: u.licenses.map((l) => l.licenseTypeId),
   }));

@@ -75,17 +75,18 @@ model LicenseType {
 }
 
 model User {
-  id              String   @id @default(uuid())
-  companyId       String
-  locationId      String?
-  name            String
-  email           String?
-  username        String?  @unique
-  passwordHash    String
-  role            Role
-  hasCompanyEmail Boolean  @default(false)
-  active          Boolean  @default(true)
-  createdAt       DateTime @default(now())
+  id                    String   @id @default(uuid())
+  companyId             String
+  locationId            String?
+  supervisedLocationIds String[] @default([])
+  name                  String
+  email                 String?
+  username              String?  @unique
+  passwordHash          String
+  role                  Role
+  hasCompanyEmail       Boolean  @default(false)
+  active                Boolean  @default(true)
+  createdAt             DateTime @default(now())
 
   company            Company            @relation(fields: [companyId], references: [id])
   location           Location?          @relation(fields: [locationId], references: [id])
