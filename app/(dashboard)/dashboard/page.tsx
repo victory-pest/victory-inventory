@@ -10,14 +10,29 @@ export default async function DashboardPage() {
   const session = await getServerSession(authOptions);
   if (!session) redirect("/login");
 
-  const locationName = session.user.locationId
-    ? (
+  let locationName: string | null = null;
+  if (session.user.role === "supervisor") {
+    const ids = session.user.supervisedLocationIds;
+    if (ids.length === 1) {
+      locationName =
+        (
+          await prisma.location.findUnique({
+            where: { id: ids[0] },
+            select: { name: true },
+          })
+        )?.name ?? null;
+    } else if (ids.length > 1) {
+      locationName = `${ids.length} supervised locations`;
+    }
+  } else if (session.user.locationId) {
+    locationName =
+      (
         await prisma.location.findUnique({
           where: { id: session.user.locationId },
           select: { name: true },
         })
-      )?.name ?? null
-    : null;
+      )?.name ?? null;
+  }
 
   switch (session.user.role) {
     case "technician":
@@ -31,7 +46,7 @@ export default async function DashboardPage() {
       return (
         <SupervisorDashboard
           companyId={session.user.companyId}
-          locationId={session.user.locationId ?? null}
+          locationIds={session.user.supervisedLocationIds}
           locationName={locationName}
         />
       );

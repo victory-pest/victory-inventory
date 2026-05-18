@@ -20,7 +20,7 @@ export async function ManagerDashboard({ companyId }: Props) {
         where: { companyId, role: "technician", active: true },
       }),
       prisma.stock.findMany({
-        where: { product: { companyId } },
+        where: { product: { companyId, active: true } },
         include: {
           product: { select: { id: true, name: true, unitCost: true } },
           location: { select: { id: true, name: true } },

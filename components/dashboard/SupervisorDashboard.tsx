@@ -7,12 +7,15 @@ import { prisma } from "@/lib/prisma";
 
 type Props = {
   companyId: string;
-  locationId: string | null;
+  locationIds: string[];
   locationName: string | null;
 };
 
-export async function SupervisorDashboard({ companyId, locationId, locationName }: Props) {
-  const where = locationId ? { companyId, locationId } : { companyId };
+export async function SupervisorDashboard({ companyId, locationIds, locationName }: Props) {
+  const scoped = locationIds.length > 0;
+  const where = scoped
+    ? { companyId, locationId: { in: locationIds } }
+    : { companyId };
 
   const [pendingCount, urgentCount, stockRows] = await Promise.all([
     prisma.request.count({ where: { ...where, status: "pending" } }),
@@ -20,7 +23,12 @@ export async function SupervisorDashboard({ companyId, locationId, locationName 
       where: { ...where, status: "pending", priority: "urgent" },
     }),
     prisma.stock.findMany({
-      where: locationId ? { locationId } : {},
+      where: {
+        ...(scoped
+          ? { locationId: { in: locationIds } }
+          : { location: { companyId } }),
+        product: { active: true },
+      },
       include: {
         product: { select: { id: true, name: true, sku: true } },
         location: { select: { id: true, name: true } },
@@ -29,7 +37,12 @@ export async function SupervisorDashboard({ companyId, locationId, locationName 
   ]);
 
   const locationProducts = await prisma.locationProduct.findMany({
-    where: locationId ? { locationId, active: true } : { active: true },
+    where: {
+      active: true,
+      ...(scoped
+        ? { locationId: { in: locationIds } }
+        : { location: { companyId } }),
+    },
     select: { locationId: true, productId: true, minStock: true },
   });
   const minMap = new Map(

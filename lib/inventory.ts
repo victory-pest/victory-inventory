@@ -49,6 +49,7 @@ export async function getInventoryView({
       ...(scoped
         ? { locationId: { in: locationIds } }
         : { location: { companyId } }),
+      product: { active: true },
     },
     include: {
       product: {
