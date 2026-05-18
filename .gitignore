@@ -47,3 +47,9 @@ patch-*.py
 continue-patch-*.js
 hotfix-*.js
 cleanup-repo.js
+
+# Dev/diagnostic scripts (not for deploy)
+/scripts/
+
+# Accidental files
+/node
