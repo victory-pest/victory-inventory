@@ -33,8 +33,11 @@ export async function POST(req: NextRequest) {
     where: { id: locationId, companyId: user.companyId },
   });
   if (!location) return notFound("location_not_found");
-  if (user.role === "supervisor" && user.locationId !== locationId) {
-    return forbidden("Different location");
+  if (
+    user.role === "supervisor" &&
+    !user.supervisedLocationIds.includes(locationId)
+  ) {
+    return forbidden("Not one of your supervised locations");
   }
 
   const product = await prisma.product.findFirst({

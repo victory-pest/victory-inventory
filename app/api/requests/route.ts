@@ -36,8 +36,8 @@ export async function GET(req: NextRequest) {
 
   if (user.role === "technician") {
     where.technicianId = user.id;
-  } else if (user.role === "supervisor" && user.locationId) {
-    where.locationId = user.locationId;
+  } else if (user.role === "supervisor") {
+    where.locationId = { in: user.supervisedLocationIds };
   }
 
   if (status) where.status = status as Prisma.RequestWhereInput["status"];

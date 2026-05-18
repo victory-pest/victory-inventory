@@ -11,8 +11,11 @@ export async function GET() {
   const user = auth.session.user;
 
   const where =
-    user.role === "supervisor" && user.locationId
-      ? { companyId: user.companyId, locationId: user.locationId }
+    user.role === "supervisor"
+      ? {
+          companyId: user.companyId,
+          locationId: { in: user.supervisedLocationIds },
+        }
       : { companyId: user.companyId };
 
   const receptions = await prisma.reception.findMany({
@@ -69,8 +72,11 @@ export async function POST(req: NextRequest) {
     where: { id: locationId, companyId: user.companyId },
   });
   if (!location) return notFound("location_not_found");
-  if (user.role === "supervisor" && user.locationId !== locationId) {
-    return forbidden("Different location");
+  if (
+    user.role === "supervisor" &&
+    !user.supervisedLocationIds.includes(locationId)
+  ) {
+    return forbidden("Not one of your supervised locations");
   }
 
   if (supplierId) {

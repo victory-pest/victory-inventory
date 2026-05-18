@@ -41,8 +41,11 @@ export async function POST(
   if (request.status !== "pending")
     return badRequest("Request is not pending");
 
-  if (user.role === "supervisor" && request.locationId !== user.locationId) {
-    return forbidden("Different location");
+  if (
+    user.role === "supervisor" &&
+    !user.supervisedLocationIds.includes(request.locationId)
+  ) {
+    return forbidden("Not one of your supervised locations");
   }
 
   const approvalsById = new Map(

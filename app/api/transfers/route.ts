@@ -11,12 +11,12 @@ export async function GET() {
   const user = auth.session.user;
 
   const where =
-    user.role === "supervisor" && user.locationId
+    user.role === "supervisor"
       ? {
           companyId: user.companyId,
           OR: [
-            { fromLocationId: user.locationId },
-            { toLocationId: user.locationId },
+            { fromLocationId: { in: user.supervisedLocationIds } },
+            { toLocationId: { in: user.supervisedLocationIds } },
           ],
         }
       : { companyId: user.companyId };
@@ -72,8 +72,11 @@ export async function POST(req: NextRequest) {
     return badRequest("Source and destination must differ");
   }
 
-  if (user.role === "supervisor" && user.locationId !== fromLocationId) {
-    return forbidden("Can only transfer from your own location");
+  if (
+    user.role === "supervisor" &&
+    !user.supervisedLocationIds.includes(fromLocationId)
+  ) {
+    return forbidden("Can only transfer from your supervised locations");
   }
 
   const locations = await prisma.location.findMany({
