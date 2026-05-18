@@ -8,6 +8,8 @@ export type InventoryRow = {
   sku: string | null;
   categoryName: string | null;
   unitAbbr: string | null;
+  purchaseUnitAbbr: string | null;
+  unitsPerPurchase: number;
   unitCost: number;
   stock: number;
   minStock: number;
@@ -50,6 +52,8 @@ export async function getInventoryView({
           unitCost: true,
           category: { select: { name: true } },
           unit: { select: { abbreviation: true } },
+          purchaseUnit: { select: { abbreviation: true } },
+          unitsPerPurchase: true,
         },
       },
       location: { select: { id: true, name: true } },
@@ -80,6 +84,8 @@ export async function getInventoryView({
         sku: s.product.sku,
         categoryName: s.product.category?.name ?? null,
         unitAbbr: s.product.unit?.abbreviation ?? null,
+        purchaseUnitAbbr: s.product.purchaseUnit?.abbreviation ?? null,
+        unitsPerPurchase: Number(s.product.unitsPerPurchase),
         unitCost: Number(s.product.unitCost),
         stock,
         minStock: lp.min,

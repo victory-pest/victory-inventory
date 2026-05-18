@@ -135,7 +135,12 @@ export function InventoryTable({
                       </TableCell>
                     )}
                     <TableCell className="text-right tabular-nums font-semibold">
-                      {r.stock} {r.unitAbbr ?? ""}
+                      <div>{r.stock} {r.unitAbbr ?? ""}</div>
+                      {r.purchaseUnitAbbr && r.unitsPerPurchase > 1 && (
+                        <div className="text-xs font-normal text-brand-dark/60">
+                          = {Math.floor(r.stock / r.unitsPerPurchase)} {r.purchaseUnitAbbr}
+                        </div>
+                      )}
                     </TableCell>
                     <TableCell className="hidden md:table-cell text-right tabular-nums text-brand-dark/70">
                       {r.minStock}
