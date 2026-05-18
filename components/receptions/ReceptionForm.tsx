@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
 import {
   Select,
   SelectContent,
@@ -31,6 +32,9 @@ type Product = {
   name: string;
   sku: string | null;
   unitCost: number;
+  unit: { name: string; abbreviation: string | null } | null;
+  purchaseUnit: { name: string; abbreviation: string | null } | null;
+  unitsPerPurchase: number;
 };
 
 type Props = {
@@ -45,6 +49,7 @@ type Line = {
   productId: string;
   quantity: number;
   unitCost: number;
+  unitType: "stock" | "purchase";
 };
 
 export function ReceptionForm({
@@ -61,7 +66,7 @@ export function ReceptionForm({
   const [invoiceNumber, setInvoiceNumber] = useState("");
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [lines, setLines] = useState<Line[]>([
-    { productId: "", quantity: 1, unitCost: 0 },
+    { productId: "", quantity: 1, unitCost: 0, unitType: "stock" },
   ]);
   const [submitting, setSubmitting] = useState(false);
 
@@ -69,14 +74,44 @@ export function ReceptionForm({
     setLines((prev) => prev.map((l, i) => (i === idx ? { ...l, ...patch } : l)));
   }
   function addLine() {
-    setLines((prev) => [...prev, { productId: "", quantity: 1, unitCost: 0 }]);
+    setLines((prev) => [
+      ...prev,
+      { productId: "", quantity: 1, unitCost: 0, unitType: "stock" },
+    ]);
   }
   function removeLine(idx: number) {
     setLines((prev) => prev.filter((_, i) => i !== idx));
   }
   function onPickProduct(idx: number, productId: string) {
     const p = products.find((x) => x.id === productId);
-    setLine(idx, { productId, unitCost: p?.unitCost ?? 0 });
+    const conv = p ? Number(p.unitsPerPurchase) : 1;
+    const hasDual = !!(p?.purchaseUnit && conv > 1);
+    const baseCost = p?.unitCost ?? 0;
+    setLine(idx, {
+      productId,
+      // Show cost per purchase unit when dual-unit, else per stock unit
+      unitCost: hasDual ? baseCost * conv : baseCost,
+      unitType: hasDual ? "purchase" : "stock",
+    });
+  }
+
+  function toggleUnit(idx: number, newType: "stock" | "purchase") {
+    const line = lines[idx];
+    if (line.unitType === newType) return;
+    const p = products.find((x) => x.id === line.productId);
+    const conv = p ? Number(p.unitsPerPurchase) : 1;
+    if (conv <= 1) {
+      setLine(idx, { unitType: newType });
+      return;
+    }
+    // Convert qty + cost to the new unit
+    setLine(idx, {
+      unitType: newType,
+      quantity:
+        newType === "stock" ? line.quantity * conv : line.quantity / conv,
+      unitCost:
+        newType === "stock" ? line.unitCost / conv : line.unitCost * conv,
+    });
   }
 
   const total = lines.reduce((s, l) => s + l.quantity * l.unitCost, 0);
@@ -90,6 +125,19 @@ export function ReceptionForm({
       return;
     }
     setSubmitting(true);
+
+    // Convert purchase-unit lines to stock-unit before sending
+    const items = lines.map((l) => {
+      const p = products.find((x) => x.id === l.productId);
+      const conv = p ? Number(p.unitsPerPurchase) : 1;
+      const isPurchase = l.unitType === "purchase" && conv > 1;
+      return {
+        productId: l.productId,
+        quantity: isPurchase ? l.quantity * conv : l.quantity,
+        unitCost: isPurchase ? l.unitCost / conv : l.unitCost,
+      };
+    });
+
     const res = await fetch("/api/receptions", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -98,7 +146,7 @@ export function ReceptionForm({
         supplierId: supplierId === "none" ? null : supplierId,
         invoiceNumber: invoiceNumber.trim() || null,
         receptionDate: date,
-        items: lines,
+        items,
       }),
     });
     setSubmitting(false);
@@ -253,6 +301,53 @@ export function ReceptionForm({
                     <Trash2 className="h-4 w-4 text-brand-error" />
                   </Button>
                 </div>
+
+                {(() => {
+                  const p = products.find((x) => x.id === line.productId);
+                  if (!p?.purchaseUnit || Number(p.unitsPerPurchase) <= 1)
+                    return null;
+                  const stockLabel =
+                    p.unit?.abbreviation ?? p.unit?.name ?? "each";
+                  const purchLabel =
+                    p.purchaseUnit.abbreviation ?? p.purchaseUnit.name;
+                  const conv = Number(p.unitsPerPurchase);
+                  return (
+                    <div className="col-span-12 ml-1 flex flex-wrap items-center gap-2 text-xs">
+                      <span className="text-brand-dark/60">Receiving in:</span>
+                      <div className="inline-flex rounded-md border overflow-hidden">
+                        <button
+                          type="button"
+                          onClick={() => toggleUnit(idx, "purchase")}
+                          className={cn(
+                            "px-2 py-0.5 text-xs transition-colors",
+                            line.unitType === "purchase"
+                              ? "bg-brand-primary text-white"
+                              : "bg-white text-brand-dark/70 hover:bg-brand-bg",
+                          )}
+                        >
+                          {purchLabel}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => toggleUnit(idx, "stock")}
+                          className={cn(
+                            "px-2 py-0.5 text-xs transition-colors",
+                            line.unitType === "stock"
+                              ? "bg-brand-primary text-white"
+                              : "bg-white text-brand-dark/70 hover:bg-brand-bg",
+                          )}
+                        >
+                          {stockLabel}
+                        </button>
+                      </div>
+                      <span className="text-brand-dark/60">
+                        {line.unitType === "purchase"
+                          ? `→ ${(line.quantity * conv).toFixed(2)} ${stockLabel} into stock`
+                          : `(= ${(line.quantity / conv).toFixed(2)} ${purchLabel})`}
+                      </span>
+                    </div>
+                  );
+                })()}
               </li>
             ))}
           </ul>

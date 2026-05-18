@@ -29,7 +29,15 @@ export default async function NewReceptionPage() {
     }),
     prisma.product.findMany({
       where: { companyId: user.companyId, active: true },
-      select: { id: true, name: true, sku: true, unitCost: true },
+      select: {
+        id: true,
+        name: true,
+        sku: true,
+        unitCost: true,
+        unitsPerPurchase: true,
+        unit: { select: { name: true, abbreviation: true } },
+        purchaseUnit: { select: { name: true, abbreviation: true } },
+      },
       orderBy: { name: "asc" },
     }),
   ]);
@@ -57,6 +65,9 @@ export default async function NewReceptionPage() {
           name: p.name,
           sku: p.sku,
           unitCost: Number(p.unitCost),
+          unit: p.unit,
+          purchaseUnit: p.purchaseUnit,
+          unitsPerPurchase: Number(p.unitsPerPurchase),
         }))}
         defaultLocationId={defaultLocation}
         lockLocation={user.role === "supervisor"}
