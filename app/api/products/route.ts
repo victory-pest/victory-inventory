@@ -109,6 +109,15 @@ export async function POST(req: NextRequest) {
         maxStock: 0,
       },
     });
+    await prisma.stock.upsert({
+      where: { locationId_productId: { locationId: l.id, productId: product.id } },
+      update: {},
+      create: {
+        locationId: l.id,
+        productId: product.id,
+        quantity: 0,
+      },
+    });
   }
 
   return NextResponse.json({ product }, { status: 201 });
