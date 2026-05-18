@@ -11,12 +11,12 @@ export default async function InventoryPage() {
   const user = session.user;
   if (user.role === "technician") redirect("/dashboard");
 
-  const scopedLocationId =
-    user.role === "supervisor" ? (user.locationId ?? null) : null;
+  const scopedLocationIds =
+    user.role === "supervisor" ? user.supervisedLocationIds : null;
 
   const { rows, locations } = await getInventoryView({
     companyId: user.companyId,
-    locationId: scopedLocationId,
+    locationIds: scopedLocationIds,
   });
 
   let canAdjust = isManagerLike(user.role);
@@ -31,8 +31,8 @@ export default async function InventoryPage() {
           Inventory
         </h1>
         <p className="text-sm text-brand-dark/60">
-          {scopedLocationId
-            ? "Your location's stock"
+          {scopedLocationIds && scopedLocationIds.length > 0
+            ? `Your supervised location${scopedLocationIds.length > 1 ? "s" : ""} stock`
             : "Stock across all company locations"}
         </p>
       </div>
@@ -41,7 +41,6 @@ export default async function InventoryPage() {
         rows={rows}
         locations={locations}
         canAdjust={canAdjust}
-        scopedLocationId={scopedLocationId}
       />
     </div>
   );

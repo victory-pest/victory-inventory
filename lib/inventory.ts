@@ -28,20 +28,27 @@ export function stockStatus(stock: number, min: number, max: number): StockStatu
 
 export async function getInventoryView({
   companyId,
-  locationId,
+  locationIds,
 }: {
   companyId: string;
-  locationId?: string | null;
+  locationIds?: string[] | null;
 }): Promise<{ rows: InventoryRow[]; locations: { id: string; name: string }[] }> {
+  const scoped = !!(locationIds && locationIds.length > 0);
   const locations = await prisma.location.findMany({
-    where: { companyId, active: true },
+    where: {
+      companyId,
+      active: true,
+      ...(scoped ? { id: { in: locationIds } } : {}),
+    },
     select: { id: true, name: true },
     orderBy: { name: "asc" },
   });
 
   const stockRows = await prisma.stock.findMany({
     where: {
-      ...(locationId ? { locationId } : { location: { companyId } }),
+      ...(scoped
+        ? { locationId: { in: locationIds } }
+        : { location: { companyId } }),
     },
     include: {
       product: {
@@ -61,8 +68,8 @@ export async function getInventoryView({
   });
 
   const lps = await prisma.locationProduct.findMany({
-    where: locationId
-      ? { locationId }
+    where: scoped
+      ? { locationId: { in: locationIds } }
       : { location: { companyId } },
     select: { locationId: true, productId: true, minStock: true, maxStock: true },
   });

@@ -23,7 +23,6 @@ type Props = {
   rows: InventoryRow[];
   locations: { id: string; name: string }[];
   canAdjust: boolean;
-  scopedLocationId: string | null;
 };
 
 const statusStyles: Record<string, string> = {
@@ -37,11 +36,8 @@ export function InventoryTable({
   rows,
   locations,
   canAdjust,
-  scopedLocationId,
 }: Props) {
-  const [tab, setTab] = useState<string>(
-    scopedLocationId ?? (locations[0]?.id ?? "all"),
-  );
+  const [tab, setTab] = useState<string>("all");
   const [query, setQuery] = useState("");
   const [adjustRow, setAdjustRow] = useState<InventoryRow | null>(null);
 
@@ -58,7 +54,7 @@ export function InventoryTable({
     });
   }, [rows, tab, query]);
 
-  const showLocationTabs = !scopedLocationId && locations.length > 1;
+  const showLocationTabs = locations.length > 1;
 
   return (
     <div className="space-y-4">
@@ -95,7 +91,7 @@ export function InventoryTable({
                 <TableHead>Product</TableHead>
                 <TableHead className="hidden md:table-cell">SKU</TableHead>
                 <TableHead className="hidden md:table-cell">Category</TableHead>
-                {!scopedLocationId && tab === "all" && (
+                {tab === "all" && locations.length > 1 && (
                   <TableHead className="hidden lg:table-cell">Location</TableHead>
                 )}
                 <TableHead className="text-right">Stock</TableHead>
@@ -129,7 +125,7 @@ export function InventoryTable({
                     <TableCell className="hidden md:table-cell text-brand-dark/70">
                       {r.categoryName ?? "—"}
                     </TableCell>
-                    {!scopedLocationId && tab === "all" && (
+                    {tab === "all" && locations.length > 1 && (
                       <TableCell className="hidden lg:table-cell text-brand-dark/70">
                         {r.locationName}
                       </TableCell>
