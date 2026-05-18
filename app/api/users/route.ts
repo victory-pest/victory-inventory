@@ -87,17 +87,18 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  const isTech = data.role === "technician";
   const passwordHash = await bcrypt.hash(data.password, 10);
   const user = await prisma.user.create({
     data: {
       companyId: auth.session.user.companyId,
       name: data.name,
-      email: data.email ?? null,
-      username: data.username ?? null,
+      email: isTech ? null : (data.email ?? null),
+      username: isTech ? (data.username ?? null) : null,
       role: data.role,
       locationId: isSupervisor ? null : (data.locationId ?? null),
       supervisedLocationIds: isSupervisor ? data.supervisedLocationIds : [],
-      hasCompanyEmail: !!data.email,
+      hasCompanyEmail: !isTech && !!data.email,
       passwordHash,
       active: data.active ?? true,
       licenses: {

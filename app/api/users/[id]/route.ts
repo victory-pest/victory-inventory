@@ -47,11 +47,6 @@ export async function PATCH(
 
   const updateData: Record<string, unknown> = {};
   if (data.name !== undefined) updateData.name = data.name;
-  if (data.email !== undefined) {
-    updateData.email = data.email;
-    updateData.hasCompanyEmail = !!data.email;
-  }
-  if (data.username !== undefined) updateData.username = data.username;
   if (data.role !== undefined) updateData.role = data.role;
   if (data.active !== undefined) updateData.active = data.active;
   if (data.password) {
@@ -61,6 +56,22 @@ export async function PATCH(
   // Resolve effective role: from payload or existing
   const effectiveRole = data.role ?? existing.role;
   const willBeSupervisor = effectiveRole === "supervisor";
+  const willBeTech = effectiveRole === "technician";
+
+  // Role-based email/username enforcement (prevents browser autofill leakage)
+  if (willBeTech) {
+    // Technician: clear email, allow username
+    updateData.email = null;
+    updateData.hasCompanyEmail = false;
+    if (data.username !== undefined) updateData.username = data.username;
+  } else {
+    // Non-tech (manager/supervisor/super_admin): clear username, allow email
+    updateData.username = null;
+    if (data.email !== undefined) {
+      updateData.email = data.email;
+      updateData.hasCompanyEmail = !!data.email;
+    }
+  }
 
   if (willBeSupervisor) {
     // Determine the array: from payload if provided, else existing

@@ -223,8 +223,8 @@ function UserDialog({
     setSaving(true);
     const payload: Record<string, unknown> = {
       name: name.trim(),
-      email: email.trim() || null,
-      username: username.trim() || null,
+      email: role === "technician" ? null : (email.trim() || null),
+      username: role === "technician" ? (username.trim() || null) : null,
       role,
       locationId: role === "supervisor" ? null : (locationId || null),
       supervisedLocationIds: role === "supervisor" ? supervisedLocationIds : [],
