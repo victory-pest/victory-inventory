@@ -4,7 +4,13 @@ import { Suspense, useState, FormEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
 import Image from "next/image";
-import Link from "next/link";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,8 +35,7 @@ function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const isEmailMode = identifier.includes("@");
+  const [showForgotModal, setShowForgotModal] = useState(false);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -141,19 +146,51 @@ function LoginForm() {
               )}
             </Button>
 
-            {isEmailMode && (
-              <div className="text-center text-sm">
-                <Link
-                  href="/forgot-password"
-                  className="text-brand-primary hover:underline"
-                >
-                  Forgot password?
-                </Link>
-              </div>
-            )}
+            <div className="text-center text-sm">
+              <button
+                type="button"
+                onClick={() => setShowForgotModal(true)}
+                className="text-brand-primary hover:underline"
+              >
+                Forgot password?
+              </button>
+            </div>
           </form>
         </CardContent>
       </Card>
+
+      <Dialog open={showForgotModal} onOpenChange={setShowForgotModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Forgot your password?</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 text-sm">
+            <p>
+              For security reasons, passwords cannot be reset automatically.
+            </p>
+            <p>Please contact one of the following:</p>
+            <ul className="space-y-2 pl-5 list-disc">
+              <li>
+                <span className="font-semibold">Your supervisor</span> — if you are a technician
+              </li>
+              <li>
+                <span className="font-semibold">The main office</span> — for managers and supervisors
+              </li>
+            </ul>
+            <p className="text-muted-foreground text-xs pt-1">
+              They will provide you with new credentials.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button
+              onClick={() => setShowForgotModal(false)}
+              className="bg-brand-primary hover:bg-brand-primary/90 text-white"
+            >
+              Got it
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </main>
   );
 }
