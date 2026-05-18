@@ -204,6 +204,8 @@ async function renderCatalogTab(companyId: string, subTab: string) {
     sku: p.sku,
     categoryId: p.categoryId,
     unitId: p.unitId,
+    purchaseUnitId: p.purchaseUnitId,
+    unitsPerPurchase: Number(p.unitsPerPurchase),
     supplierId: p.supplierId,
     unitCost: Number(p.unitCost),
     epaRegistration: p.epaRegistration,

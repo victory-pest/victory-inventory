@@ -9,6 +9,8 @@ const schema = z.object({
   sku: z.string().max(60).nullable().optional(),
   categoryId: z.string().nullable().optional(),
   unitId: z.string().nullable().optional(),
+  purchaseUnitId: z.string().nullable().optional(),
+  unitsPerPurchase: z.number().min(0.01).optional(),
   supplierId: z.string().nullable().optional(),
   unitCost: z.number().min(0).optional(),
   epaRegistration: z.string().max(60).nullable().optional(),

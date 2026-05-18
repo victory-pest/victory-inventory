@@ -161,8 +161,9 @@ model UnitOfMeasure {
   abbreviation String?
   active       Boolean @default(true)
 
-  company  Company   @relation(fields: [companyId], references: [id])
-  products Product[]
+  company                Company   @relation(fields: [companyId], references: [id])
+  products               Product[] @relation("ProductStockUnit")
+  productsAsPurchaseUnit Product[] @relation("ProductPurchaseUnit")
 
   @@map("units_of_measure")
 }
@@ -185,25 +186,25 @@ model Supplier {
 }
 
 model Product {
-  id              String   @id @default(uuid())
-  companyId       String
-  categoryId      String?
-  supplierId      String?
-  unitId          String?
-  name            String
-  sku             String?
-  unitCost        Decimal  @default(0) @db.Decimal(10, 2)
+  id               String   @id @default(uuid())
+  companyId        String
+  categoryId       String?
+  supplierId       String?
+  unitId           String?
+  name             String
+  sku              String?
+  unitCost         Decimal  @default(0) @db.Decimal(10, 2)
   epaRegistration  String?
   activeIngredient String?
   photoUrl         String?
-  requiresLicense Boolean  @default(false)
-  active          Boolean  @default(true)
-  createdAt       DateTime @default(now())
+  requiresLicense  Boolean  @default(false)
+  active           Boolean  @default(true)
+  createdAt        DateTime @default(now())
 
   company          Company             @relation(fields: [companyId], references: [id])
   category         ProductCategory?    @relation(fields: [categoryId], references: [id])
   supplier         Supplier?           @relation(fields: [supplierId], references: [id])
-  unit             UnitOfMeasure?      @relation(fields: [unitId], references: [id])
+  unit             UnitOfMeasure?      @relation("ProductStockUnit", fields: [unitId], references: [id])
   licenses         ProductLicense[]
   locationProducts LocationProduct[]
   stock            Stock[]
@@ -213,6 +214,11 @@ model Product {
   transferItems    TransferItem[]
   countItems       PhysicalCountItem[]
   truckInventory   TruckInventory[]
+
+  // Dual-unit support: purchaseUnit + unitsPerPurchase
+  purchaseUnitId   String?
+  purchaseUnit     UnitOfMeasure? @relation("ProductPurchaseUnit", fields: [purchaseUnitId], references: [id])
+  unitsPerPurchase Decimal        @default(1) @db.Decimal(10, 2)
 
   @@map("products")
 }

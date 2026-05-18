@@ -50,6 +50,8 @@ export type ProductRow = {
   sku: string | null;
   categoryId: string | null;
   unitId: string | null;
+  purchaseUnitId: string | null;
+  unitsPerPurchase: number;
   supplierId: string | null;
   unitCost: number;
   epaRegistration: string | null;
@@ -823,6 +825,12 @@ function ProductDialog({
   const [sku, setSku] = useState(row?.sku ?? "");
   const [categoryId, setCategoryId] = useState(row?.categoryId ?? "");
   const [unitId, setUnitId] = useState(row?.unitId ?? "");
+  const [purchaseUnitId, setPurchaseUnitId] = useState(
+    row?.purchaseUnitId ?? "",
+  );
+  const [unitsPerPurchase, setUnitsPerPurchase] = useState(
+    row?.unitsPerPurchase ?? 1,
+  );
   const [supplierId, setSupplierId] = useState(row?.supplierId ?? "");
   const [unitCost, setUnitCost] = useState(row?.unitCost ?? 0);
   const [epa, setEpa] = useState(row?.epaRegistration ?? "");
@@ -856,6 +864,8 @@ function ProductDialog({
       sku: sku.trim() || null,
       categoryId: categoryId || null,
       unitId: unitId || null,
+      purchaseUnitId: purchaseUnitId || null,
+      unitsPerPurchase: Number(unitsPerPurchase) || 1,
       supplierId: supplierId || null,
       unitCost: Number(unitCost) || 0,
       epaRegistration: epa.trim() || null,
@@ -939,6 +949,48 @@ function ProductDialog({
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+          </div>
+
+          {/* Dual-unit packaging (optional) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label>Purchase unit (optional)</Label>
+              <Select
+                value={purchaseUnitId || "none"}
+                onValueChange={(v) =>
+                  setPurchaseUnitId(v === "none" ? "" : v)
+                }
+              >
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">— None —</SelectItem>
+                  {units.filter((u) => u.active).map((u) => (
+                    <SelectItem key={u.id} value={u.id}>
+                      {u.name}
+                      {u.abbreviation ? ` (${u.abbreviation})` : ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-brand-dark/60">
+                e.g., box, roll, pail. Leave blank for indivisible products.
+              </p>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Units per purchase</Label>
+              <Input
+                type="number"
+                step="0.01"
+                min={0.01}
+                value={unitsPerPurchase}
+                onChange={(e) =>
+                  setUnitsPerPurchase(Number(e.target.value) || 1)
+                }
+              />
+              <p className="text-xs text-brand-dark/60">
+                e.g., 72 (box of 72 traps), 100 (100 ft roll), 18 (18 kg pail). Leave 1 if not applicable.
+              </p>
             </div>
           </div>
 
