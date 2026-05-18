@@ -168,17 +168,8 @@ function LoginForm() {
             <p>
               For security reasons, passwords cannot be reset automatically.
             </p>
-            <p>Please contact one of the following:</p>
-            <ul className="space-y-2 pl-5 list-disc">
-              <li>
-                <span className="font-semibold">Your supervisor</span> — if you are a technician
-              </li>
-              <li>
-                <span className="font-semibold">The main office</span> — for managers and supervisors
-              </li>
-            </ul>
-            <p className="text-muted-foreground text-xs pt-1">
-              They will provide you with new credentials.
+            <p>
+              Please contact the <span className="font-semibold">main office</span> to recover your credentials.
             </p>
           </div>
           <DialogFooter>
