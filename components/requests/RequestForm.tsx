@@ -43,11 +43,25 @@ type Props = {
   categories: CatalogCategory[];
 };
 
+type UnitType = "stock" | "purchase";
+type CartEntry = { qty: number; unitType: UnitType };
+
+function isDualUnit(p: CatalogProduct): boolean {
+  return !!(p.purchaseUnit && p.unitsPerPurchase > 1);
+}
+
+function getMaxForUnit(p: CatalogProduct, unitType: UnitType): number {
+  if (unitType === "purchase" && isDualUnit(p)) {
+    return Math.floor(p.stock / p.unitsPerPurchase);
+  }
+  return p.stock;
+}
+
 export function RequestForm({ products, categories }: Props) {
   const router = useRouter();
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
-  const [cart, setCart] = useState<Map<string, number>>(new Map());
+  const [cart, setCart] = useState<Map<string, CartEntry>>(new Map());
   const [priority, setPriority] = useState<Priority>("normal");
   const [note, setNote] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -70,29 +84,65 @@ export function RequestForm({ products, categories }: Props) {
     });
   }, [products, categoryId, query]);
 
-  function setQty(productId: string, qty: number) {
+  function setQty(productId: string, qty: number, unitType?: UnitType) {
     const product = productMap.get(productId);
     if (!product) return;
     const next = new Map(cart);
+    const current = cart.get(productId);
+    const ut: UnitType =
+      unitType ??
+      current?.unitType ??
+      (isDualUnit(product) ? "purchase" : "stock");
     if (qty <= 0) {
       next.delete(productId);
     } else {
-      next.set(productId, Math.min(qty, product.stock));
+      const max = getMaxForUnit(product, ut);
+      next.set(productId, { qty: Math.min(qty, max), unitType: ut });
     }
+    setCart(next);
+  }
+
+  function toggleCartUnit(productId: string, newType: UnitType) {
+    const product = productMap.get(productId);
+    const entry = cart.get(productId);
+    if (!product || !entry) return;
+    if (entry.unitType === newType) return;
+    const conv = product.unitsPerPurchase;
+    if (conv <= 1) {
+      const next = new Map(cart);
+      next.set(productId, { qty: entry.qty, unitType: newType });
+      setCart(next);
+      return;
+    }
+    const newQty =
+      newType === "stock"
+        ? entry.qty * conv
+        : Math.floor((entry.qty / conv) * 100) / 100;
+    const max = getMaxForUnit(product, newType);
+    const next = new Map(cart);
+    next.set(productId, {
+      qty: Math.min(Math.max(newQty, 1), max),
+      unitType: newType,
+    });
     setCart(next);
   }
 
   const cartItems = useMemo(
     () =>
-      Array.from(cart.entries()).map(([id, qty]) => ({
+      Array.from(cart.entries()).map(([id, entry]) => ({
         product: productMap.get(id)!,
-        qty,
+        qty: entry.qty,
+        unitType: entry.unitType,
       })),
     [cart, productMap],
   );
 
   const totalItems = cartItems.reduce((sum, c) => sum + c.qty, 0);
-  const hasAdjustments = cartItems.some((c) => c.qty > c.product.stock);
+  const hasAdjustments = cartItems.some((c) => {
+    const stockQty =
+      c.unitType === "purchase" ? c.qty * c.product.unitsPerPurchase : c.qty;
+    return stockQty > c.product.stock;
+  });
 
   async function onSubmit() {
     if (cartItems.length === 0) {
@@ -108,7 +158,10 @@ export function RequestForm({ products, categories }: Props) {
         note: note.trim() || null,
         items: cartItems.map((c) => ({
           productId: c.product.id,
-          quantity: c.qty,
+          quantity:
+            c.unitType === "purchase"
+              ? c.qty * c.product.unitsPerPurchase
+              : c.qty,
         })),
       }),
     });
@@ -171,14 +224,23 @@ export function RequestForm({ products, categories }: Props) {
         </Card>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {filtered.map((p) => (
-            <ProductRow
-              key={p.id}
-              product={p}
-              quantity={cart.get(p.id) ?? 0}
-              onChange={(q) => setQty(p.id, q)}
-            />
-          ))}
+          {filtered.map((p) => {
+            const entry = cart.get(p.id);
+            const defaultUt: UnitType = isDualUnit(p) ? "purchase" : "stock";
+            return (
+              <ProductRow
+                key={p.id}
+                product={p}
+                quantity={entry?.qty ?? 0}
+                unitType={entry?.unitType ?? defaultUt}
+                onChange={(q) => setQty(p.id, q)}
+                onToggleUnit={(ut) => {
+                  if (entry) toggleCartUnit(p.id, ut);
+                  else setQty(p.id, 1, ut);
+                }}
+              />
+            );
+          })}
         </div>
       )}
 
@@ -223,24 +285,78 @@ export function RequestForm({ products, categories }: Props) {
             )}
 
             <ul className="divide-y border rounded-md bg-white">
-              {cartItems.map(({ product, qty }) => (
-                <li key={product.id} className="flex items-center gap-3 p-3">
-                  <div className="min-w-0 flex-1">
+              {cartItems.map(({ product, qty, unitType }) => {
+                const dual = !!(product.purchaseUnit && product.unitsPerPurchase > 1);
+                const stockLbl = product.unit?.abbreviation ?? product.unit?.name ?? "ea";
+                const purchLbl = product.purchaseUnit
+                  ? product.purchaseUnit.abbreviation ?? product.purchaseUnit.name
+                  : stockLbl;
+                const stockEquivalent = unitType === "purchase" && dual
+                  ? qty * product.unitsPerPurchase
+                  : qty;
+                const max = unitType === "purchase" && dual
+                  ? Math.floor(product.stock / product.unitsPerPurchase)
+                  : product.stock;
+                return (
+                  <li key={product.id} className="flex flex-col gap-2 p-3">
+                    <div className="flex items-center gap-3">
+                      <div className="min-w-0 flex-1">
                     <p className="text-sm font-medium text-brand-dark truncate">
                       {product.name}
                     </p>
                     <p className="text-xs text-brand-dark/60">
-                      Stock: {product.stock}
-                      {qty > product.stock ? ` · will reduce to ${product.stock}` : ""}
+                          Stock: {product.stock} {stockLbl}
+                          {dual ? ` (${Math.floor(product.stock / product.unitsPerPurchase)} ${purchLbl})` : ""}
+                          {stockEquivalent > product.stock
+                            ? ` · will reduce to max available`
+                            : ""}
                     </p>
-                  </div>
-                  <QtyStepper
-                    value={qty}
-                    max={product.stock}
-                    onChange={(q) => setQty(product.id, q)}
-                  />
-                </li>
-              ))}
+                      </div>
+                      <QtyStepper
+                        value={qty}
+                        max={max}
+                        onChange={(q) => setQty(product.id, q)}
+                      />
+                    </div>
+                    {dual && (
+                      <div className="flex items-center justify-end gap-2 text-xs">
+                        <span className="text-brand-dark/60">in:</span>
+                        <div className="inline-flex rounded-md border overflow-hidden">
+                          <button
+                            type="button"
+                            onClick={() => toggleCartUnit(product.id, "purchase")}
+                            className={cn(
+                              "px-2 py-0.5 transition-colors",
+                              unitType === "purchase"
+                                ? "bg-brand-primary text-white"
+                                : "bg-white text-brand-dark/70 hover:bg-brand-bg",
+                            )}
+                          >
+                            {purchLbl}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => toggleCartUnit(product.id, "stock")}
+                            className={cn(
+                              "px-2 py-0.5 transition-colors",
+                              unitType === "stock"
+                                ? "bg-brand-primary text-white"
+                                : "bg-white text-brand-dark/70 hover:bg-brand-bg",
+                            )}
+                          >
+                            {stockLbl}
+                          </button>
+                        </div>
+                        <span className="text-brand-dark/50">
+                          {unitType === "purchase"
+                            ? `= ${stockEquivalent} ${stockLbl}`
+                            : `(${(qty / product.unitsPerPurchase).toFixed(2)} ${purchLbl})`}
+                        </span>
+                      </div>
+                    )}
+                  </li>
+                );
+              })}
               {cartItems.length === 0 && (
                 <li className="p-4 text-sm text-brand-dark/60 text-center">
                   No products selected.
@@ -329,13 +445,25 @@ function Chip({
 function ProductRow({
   product,
   quantity,
+  unitType,
   onChange,
+  onToggleUnit,
 }: {
   product: CatalogProduct;
   quantity: number;
+  unitType: "stock" | "purchase";
   onChange: (q: number) => void;
+  onToggleUnit: (ut: "stock" | "purchase") => void;
 }) {
   const outOfStock = product.stock <= 0;
+  const dualUnit = !!(product.purchaseUnit && product.unitsPerPurchase > 1);
+  const conv = product.unitsPerPurchase;
+  const stockUnitLabel = product.unit?.abbreviation ?? product.unit?.name ?? "ea";
+  const purchUnitLabel = product.purchaseUnit
+    ? product.purchaseUnit.abbreviation ?? product.purchaseUnit.name
+    : stockUnitLabel;
+  const stockInPurch = dualUnit ? Math.floor(product.stock / conv) : 0;
+  const maxInUnit = unitType === "purchase" && dualUnit ? stockInPurch : product.stock;
 
   return (
     <Card className={cn(outOfStock && "opacity-60")}>
@@ -384,7 +512,11 @@ function ProductRow({
               outOfStock ? "text-brand-error" : "text-brand-dark/70",
             )}
           >
-            {outOfStock ? "Out of stock" : `${product.stock} ${product.unit?.abbreviation ?? ""} in stock`}
+            {outOfStock
+              ? "Out of stock"
+              : dualUnit
+                ? `${product.stock} ${stockUnitLabel} / ${stockInPurch} ${purchUnitLabel} in stock`
+                : `${product.stock} ${stockUnitLabel} in stock`}
           </span>
           {quantity === 0 ? (
             <Button
@@ -400,11 +532,49 @@ function ProductRow({
           ) : (
             <QtyStepper
               value={quantity}
-              max={product.stock}
+              max={maxInUnit}
               onChange={onChange}
             />
           )}
         </div>
+        {dualUnit && !outOfStock && (
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-brand-dark/60">Order in:</span>
+            <div className="inline-flex rounded-md border overflow-hidden">
+              <button
+                type="button"
+                onClick={() => onToggleUnit("purchase")}
+                className={cn(
+                  "px-2 py-0.5 transition-colors",
+                  unitType === "purchase"
+                    ? "bg-brand-primary text-white"
+                    : "bg-white text-brand-dark/70 hover:bg-brand-bg",
+                )}
+              >
+                {purchUnitLabel}
+              </button>
+              <button
+                type="button"
+                onClick={() => onToggleUnit("stock")}
+                className={cn(
+                  "px-2 py-0.5 transition-colors",
+                  unitType === "stock"
+                    ? "bg-brand-primary text-white"
+                    : "bg-white text-brand-dark/70 hover:bg-brand-bg",
+                )}
+              >
+                {stockUnitLabel}
+              </button>
+            </div>
+            <span className="text-brand-dark/50">
+              {quantity > 0
+                ? unitType === "purchase"
+                  ? `= ${(quantity * conv).toFixed(0)} ${stockUnitLabel}`
+                  : `(${(quantity / conv).toFixed(2)} ${purchUnitLabel})`
+                : ""}
+            </span>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
