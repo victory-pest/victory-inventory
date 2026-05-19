@@ -30,11 +30,11 @@ export function Sidebar({ role, userName, userEmail, locationName }: Props) {
           <Image
             src="/logos/Victory_logo.png"
             alt="Victory Pest Solutions"
-            width={36}
-            height={36}
-            className="h-9 w-9 object-contain"
+            width={48}
+            height={48}
+            className="h-12 w-12 object-contain"
           />
-          <span className="font-heading font-semibold text-brand-dark text-sm leading-tight">
+          <span className="font-heading font-semibold text-brand-dark text-base leading-tight">
             Victory<br />Inventory
           </span>
         </Link>
