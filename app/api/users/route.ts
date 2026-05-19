@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireApiSession, badRequest, forbidden } from "@/lib/api";
 import { isManagerLike } from "@/lib/permissions";
@@ -89,22 +90,40 @@ export async function POST(req: NextRequest) {
 
   const isTech = data.role === "technician";
   const passwordHash = await bcrypt.hash(data.password, 10);
-  const user = await prisma.user.create({
-    data: {
-      companyId: auth.session.user.companyId,
-      name: data.name,
-      email: isTech ? null : (data.email ?? null),
-      username: isTech ? (data.username ?? null) : null,
-      role: data.role,
-      locationId: isSupervisor ? null : (data.locationId ?? null),
-      supervisedLocationIds: isSupervisor ? data.supervisedLocationIds : [],
-      hasCompanyEmail: !isTech && !!data.email,
-      passwordHash,
-      active: data.active ?? true,
-      licenses: {
-        create: data.licenseIds.map((licenseTypeId) => ({ licenseTypeId })),
+  try {
+    const user = await prisma.user.create({
+      data: {
+        companyId: auth.session.user.companyId,
+        name: data.name,
+        email: isTech ? null : (data.email ?? null),
+        username: isTech ? (data.username ?? null) : null,
+        role: data.role,
+        locationId: isSupervisor ? null : (data.locationId ?? null),
+        supervisedLocationIds: isSupervisor ? data.supervisedLocationIds : [],
+        hasCompanyEmail: !isTech && !!data.email,
+        passwordHash,
+        active: data.active ?? true,
+        licenses: {
+          create: data.licenseIds.map((licenseTypeId) => ({ licenseTypeId })),
+        },
       },
-    },
-  });
-  return NextResponse.json({ user: { id: user.id } }, { status: 201 });
+    });
+    return NextResponse.json({ user: { id: user.id } }, { status: 201 });
+  } catch (e) {
+    if (
+      e instanceof Prisma.PrismaClientKnownRequestError &&
+      e.code === "P2002"
+    ) {
+      const target = (e.meta?.target as string[] | undefined) ?? [];
+      const field = target.includes("username")
+        ? "username"
+        : target.includes("email")
+        ? "email"
+        : target[0] ?? "field";
+      return badRequest(
+        `A user with that ${field} already exists. Please choose a different ${field}.`
+      );
+    }
+    throw e;
+  }
 }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireApiSession, badRequest, forbidden, notFound } from "@/lib/api";
 import { isManagerLike } from "@/lib/permissions";
@@ -100,7 +101,25 @@ export async function PATCH(
     if (data.locationId !== undefined) updateData.locationId = data.locationId;
   }
 
-  await prisma.user.update({ where: { id }, data: updateData });
+  try {
+    await prisma.user.update({ where: { id }, data: updateData });
+  } catch (e) {
+    if (
+      e instanceof Prisma.PrismaClientKnownRequestError &&
+      e.code === "P2002"
+    ) {
+      const target = (e.meta?.target as string[] | undefined) ?? [];
+      const field = target.includes("username")
+        ? "username"
+        : target.includes("email")
+        ? "email"
+        : target[0] ?? "field";
+      return badRequest(
+        `A user with that ${field} already exists. Please choose a different ${field}.`
+      );
+    }
+    throw e;
+  }
 
   if (data.licenseIds) {
     await prisma.userLicense.deleteMany({ where: { userId: id } });

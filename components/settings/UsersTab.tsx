@@ -185,6 +185,7 @@ function UserDialog({
   const [password, setPassword] = useState("");
   const [active, setActive] = useState(row?.active ?? true);
   const [saving, setSaving] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   function toggleSupervisedLocation(id: string) {
     setSupervisedLocationIds((prev) =>
@@ -246,7 +247,7 @@ function UserDialog({
     setSaving(false);
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
-      toast.error(data.error || "Save failed");
+      setErrorMessage(data.error || "Save failed. Please try again.");
       return;
     }
     toast.success(row ? "User updated" : "User added");
@@ -257,6 +258,7 @@ function UserDialog({
   const isTech = role === "technician";
 
   return (
+    <>
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
@@ -402,5 +404,28 @@ function UserDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+
+    {errorMessage && (
+      <Dialog
+        open
+        onOpenChange={(o) => !o && setErrorMessage(null)}
+      >
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Could not save user</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-brand-dark/80 py-2">{errorMessage}</p>
+          <DialogFooter>
+            <Button
+              onClick={() => setErrorMessage(null)}
+              className="bg-brand-primary hover:bg-brand-primary/90"
+            >
+              OK
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    )}
+    </>
   );
 }
