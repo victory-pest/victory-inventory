@@ -40,5 +40,40 @@ export async function POST(req: NextRequest) {
       active: true,
     },
   });
+
+  // Create LocationProduct + Stock for ALL products (active and inactive).
+  // Including inactive ensures rows are in place if a product is later reactivated.
+  // Inventory page filters by Product.active so inactive products stay hidden.
+  const products = await prisma.product.findMany({
+    where: { companyId: auth.session.user.companyId },
+    select: { id: true },
+  });
+  for (const p of products) {
+    await prisma.locationProduct.upsert({
+      where: {
+        locationId_productId: { locationId: location.id, productId: p.id },
+      },
+      update: { active: true },
+      create: {
+        locationId: location.id,
+        productId: p.id,
+        active: true,
+        minStock: 0,
+        maxStock: 0,
+      },
+    });
+    await prisma.stock.upsert({
+      where: {
+        locationId_productId: { locationId: location.id, productId: p.id },
+      },
+      update: {},
+      create: {
+        locationId: location.id,
+        productId: p.id,
+        quantity: 0,
+      },
+    });
+  }
+
   return NextResponse.json({ location }, { status: 201 });
 }
