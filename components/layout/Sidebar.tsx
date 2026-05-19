@@ -12,6 +12,8 @@ type Props = {
   userName: string;
   userEmail: string | null;
   locationName: string | null;
+  logoUrl: string | null;
+  tenantName: string;
 };
 
 function isActive(pathname: string, href: string) {
@@ -19,7 +21,7 @@ function isActive(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(href + "/");
 }
 
-export function Sidebar({ role, userName, userEmail, locationName }: Props) {
+export function Sidebar({ role, userName, userEmail, locationName, logoUrl, tenantName }: Props) {
   const pathname = usePathname();
   const items = getSidebarNav(role);
 
@@ -28,11 +30,12 @@ export function Sidebar({ role, userName, userEmail, locationName }: Props) {
       <div className="flex h-16 items-center px-6 border-b">
         <Link href="/dashboard" className="flex items-center gap-2">
           <Image
-            src="/logos/Victory_logo.png"
-            alt="Victory Pest Solutions"
-            width={48}
+            src={logoUrl || "/logos/Victory_logo.png"}
+            alt={tenantName}
+            width={140}
             height={48}
-            className="h-12 w-12 object-contain"
+            unoptimized
+            className="h-12 w-auto max-w-[140px] object-contain"
           />
           <span className="font-heading font-semibold text-brand-dark text-base leading-tight">
             Victory<br />Inventory

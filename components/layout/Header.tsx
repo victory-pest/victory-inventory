@@ -11,6 +11,7 @@ type Props = {
   userEmail: string | null;
   locationName: string | null;
   tenantName: string;
+  logoUrl: string | null;
   unreadCount: number;
 };
 
@@ -20,6 +21,7 @@ export function Header({
   userEmail,
   locationName,
   tenantName,
+  logoUrl,
   unreadCount,
 }: Props) {
   return (
@@ -28,11 +30,12 @@ export function Header({
         <div className="flex items-center gap-3 md:hidden">
           <Link href="/dashboard" className="flex items-center gap-2">
             <Image
-              src="/logos/Victory_logo.png"
+              src={logoUrl || "/logos/Victory_logo.png"}
               alt={tenantName}
-              width={32}
+              width={100}
               height={32}
-              className="h-8 w-8 object-contain"
+              unoptimized
+              className="h-8 w-auto max-w-[100px] object-contain"
             />
             <span className="font-heading font-semibold text-brand-dark text-sm">
               {tenantName}

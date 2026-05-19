@@ -41,6 +41,8 @@ export default async function DashboardLayout({
         userName={session.user.name}
         userEmail={session.user.email ?? null}
         locationName={locationName}
+        logoUrl={tenant.logoUrl}
+        tenantName={tenant.name}
       />
 
       <div className="md:pl-64">
@@ -50,6 +52,7 @@ export default async function DashboardLayout({
           userEmail={session.user.email ?? null}
           locationName={locationName}
           tenantName={tenant.name}
+          logoUrl={tenant.logoUrl}
           unreadCount={unreadCount}
         />
         <main className="pb-20 md:pb-8">
