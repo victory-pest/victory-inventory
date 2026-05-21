@@ -58,6 +58,7 @@ model Location {
   transfersTo      Transfer[]        @relation("TransferTo")
   physicalCounts   PhysicalCount[]
 
+  @@unique([companyId, name])
   @@map("locations")
 }
 
@@ -71,6 +72,7 @@ model LicenseType {
   userLicenses    UserLicense[]
   productLicenses ProductLicense[]
 
+  @@unique([companyId, name])
   @@map("license_types")
 }
 
@@ -152,6 +154,7 @@ model ProductCategory {
   company  Company   @relation(fields: [companyId], references: [id])
   products Product[]
 
+  @@unique([companyId, name])
   @@map("product_categories")
 }
 
@@ -166,6 +169,7 @@ model UnitOfMeasure {
   products               Product[] @relation("ProductStockUnit")
   productsAsPurchaseUnit Product[] @relation("ProductPurchaseUnit")
 
+  @@unique([companyId, name])
   @@map("units_of_measure")
 }
 
@@ -183,6 +187,7 @@ model Supplier {
   products   Product[]
   receptions Reception[]
 
+  @@unique([companyId, name])
   @@map("suppliers")
 }
 
@@ -221,6 +226,7 @@ model Product {
   purchaseUnit     UnitOfMeasure? @relation("ProductPurchaseUnit", fields: [purchaseUnitId], references: [id])
   unitsPerPurchase Decimal        @default(1) @db.Decimal(10, 2)
 
+  @@unique([companyId, name])
   @@map("products")
 }
 

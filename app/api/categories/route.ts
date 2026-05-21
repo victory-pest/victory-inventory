@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireApiSession, badRequest, forbidden } from "@/lib/api";
 import { canSupervisorDo, isManagerLike } from "@/lib/permissions";
@@ -34,12 +35,22 @@ export async function POST(req: NextRequest) {
   const parsed = schema.safeParse(body);
   if (!parsed.success) return badRequest("invalid_body", parsed.error.format());
 
-  const row = await prisma.productCategory.create({
-    data: {
-      companyId: auth.session.user.companyId,
-      name: parsed.data.name,
-      active: true,
-    },
-  });
-  return NextResponse.json({ category: row }, { status: 201 });
+  try {
+    const row = await prisma.productCategory.create({
+      data: {
+        companyId: auth.session.user.companyId,
+        name: parsed.data.name,
+        active: true,
+      },
+    });
+    return NextResponse.json({ category: row }, { status: 201 });
+  } catch (e) {
+    if (
+      e instanceof Prisma.PrismaClientKnownRequestError &&
+      e.code === "P2002"
+    ) {
+      return badRequest("A category with that name already exists.");
+    }
+    throw e;
+  }
 }

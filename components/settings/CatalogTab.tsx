@@ -233,6 +233,7 @@ function NamedDialog({
   const [name, setName] = useState(row?.name ?? "");
   const [active, setActive] = useState(row?.active ?? true);
   const [saving, setSaving] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   async function save() {
     if (name.trim().length === 0) {
@@ -256,7 +257,7 @@ function NamedDialog({
     setSaving(false);
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
-      toast.error(data.error || "Save failed");
+      setErrorMessage(data.error || "Save failed");
       return;
     }
     toast.success("Saved");
@@ -265,6 +266,7 @@ function NamedDialog({
   }
 
   return (
+    <>
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent>
         <DialogHeader>
@@ -303,6 +305,29 @@ function NamedDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+
+    {errorMessage && (
+      <Dialog
+        open
+        onOpenChange={(o) => !o && setErrorMessage(null)}
+      >
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Could not save</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-brand-dark/80 py-2">{errorMessage}</p>
+          <DialogFooter>
+            <Button
+              onClick={() => setErrorMessage(null)}
+              className="bg-brand-primary hover:bg-brand-primary/90"
+            >
+              OK
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    )}
+    </>
   );
 }
 
@@ -389,6 +414,7 @@ function UnitDialog({
   const [abbr, setAbbr] = useState(row?.abbreviation ?? "");
   const [active, setActive] = useState(row?.active ?? true);
   const [saving, setSaving] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   async function save() {
     if (name.trim().length === 0) {
@@ -415,7 +441,7 @@ function UnitDialog({
     setSaving(false);
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
-      toast.error(data.error || "Save failed");
+      setErrorMessage(data.error || "Save failed");
       return;
     }
     toast.success("Saved");
@@ -423,6 +449,7 @@ function UnitDialog({
   }
 
   return (
+    <>
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent>
         <DialogHeader>
@@ -467,6 +494,29 @@ function UnitDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+
+    {errorMessage && (
+      <Dialog
+        open
+        onOpenChange={(o) => !o && setErrorMessage(null)}
+      >
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Could not save</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-brand-dark/80 py-2">{errorMessage}</p>
+          <DialogFooter>
+            <Button
+              onClick={() => setErrorMessage(null)}
+              className="bg-brand-primary hover:bg-brand-primary/90"
+            >
+              OK
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    )}
+    </>
   );
 }
 
@@ -563,6 +613,7 @@ function SupplierDialog({
   const [phone, setPhone] = useState(row?.phone ?? "");
   const [active, setActive] = useState(row?.active ?? true);
   const [saving, setSaving] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   async function save() {
     if (name.trim().length === 0) {
@@ -591,7 +642,7 @@ function SupplierDialog({
     setSaving(false);
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
-      toast.error(data.error || "Save failed");
+      setErrorMessage(data.error || "Save failed");
       return;
     }
     toast.success("Saved");
@@ -599,6 +650,7 @@ function SupplierDialog({
   }
 
   return (
+    <>
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent>
         <DialogHeader>
@@ -656,6 +708,29 @@ function SupplierDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+
+    {errorMessage && (
+      <Dialog
+        open
+        onOpenChange={(o) => !o && setErrorMessage(null)}
+      >
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Could not save</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-brand-dark/80 py-2">{errorMessage}</p>
+          <DialogFooter>
+            <Button
+              onClick={() => setErrorMessage(null)}
+              className="bg-brand-primary hover:bg-brand-primary/90"
+            >
+              OK
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    )}
+    </>
   );
 }
 
@@ -868,6 +943,7 @@ function ProductDialog({
   );
   const [active, setActive] = useState(row?.active ?? true);
   const [saving, setSaving] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   function toggleLicense(id: string) {
     setLicenseIds((prev) =>
@@ -911,7 +987,7 @@ function ProductDialog({
     setSaving(false);
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
-      toast.error(data.error || "Save failed");
+      setErrorMessage(data.error || "Save failed");
       return;
     }
     toast.success("Saved");
@@ -919,6 +995,7 @@ function ProductDialog({
   }
 
   return (
+    <>
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
@@ -1125,6 +1202,29 @@ function ProductDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+
+    {errorMessage && (
+      <Dialog
+        open
+        onOpenChange={(o) => !o && setErrorMessage(null)}
+      >
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Could not save</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-brand-dark/80 py-2">{errorMessage}</p>
+          <DialogFooter>
+            <Button
+              onClick={() => setErrorMessage(null)}
+              className="bg-brand-primary hover:bg-brand-primary/90"
+            >
+              OK
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    )}
+    </>
   );
 }
 

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireApiSession, badRequest, forbidden } from "@/lib/api";
 import { canSupervisorDo, isManagerLike } from "@/lib/permissions";
@@ -37,15 +38,25 @@ export async function POST(req: NextRequest) {
   const parsed = createSchema.safeParse(body);
   if (!parsed.success) return badRequest("invalid_body", parsed.error.format());
 
-  const supplier = await prisma.supplier.create({
-    data: {
-      companyId: user.companyId,
-      name: parsed.data.name,
-      contactName: parsed.data.contactName ?? null,
-      email: parsed.data.email ?? null,
-      phone: parsed.data.phone ?? null,
-      active: true,
-    },
-  });
-  return NextResponse.json({ supplier }, { status: 201 });
+  try {
+    const supplier = await prisma.supplier.create({
+      data: {
+        companyId: user.companyId,
+        name: parsed.data.name,
+        contactName: parsed.data.contactName ?? null,
+        email: parsed.data.email ?? null,
+        phone: parsed.data.phone ?? null,
+        active: true,
+      },
+    });
+    return NextResponse.json({ supplier }, { status: 201 });
+  } catch (e) {
+    if (
+      e instanceof Prisma.PrismaClientKnownRequestError &&
+      e.code === "P2002"
+    ) {
+      return badRequest("A supplier with that name already exists.");
+    }
+    throw e;
+  }
 }

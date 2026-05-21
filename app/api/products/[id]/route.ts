@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireApiSession, badRequest, forbidden, notFound } from "@/lib/api";
 import { canSupervisorDo, isManagerLike } from "@/lib/permissions";
@@ -53,7 +54,17 @@ export async function PATCH(
   if (!parsed.success) return badRequest("invalid_body", parsed.error.format());
 
   const { licenseTypeIds, ...rest } = parsed.data;
-  await prisma.product.update({ where: { id }, data: rest });
+  try {
+    await prisma.product.update({ where: { id }, data: rest });
+  } catch (e) {
+    if (
+      e instanceof Prisma.PrismaClientKnownRequestError &&
+      e.code === "P2002"
+    ) {
+      return badRequest("A product with that name already exists.");
+    }
+    throw e;
+  }
 
   if (licenseTypeIds) {
     await prisma.productLicense.deleteMany({ where: { productId: id } });
