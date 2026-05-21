@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireApiSession, badRequest, forbidden } from "@/lib/api";
 import { isManagerLike } from "@/lib/permissions";
@@ -30,16 +31,27 @@ export async function POST(req: NextRequest) {
   const parsed = schema.safeParse(body);
   if (!parsed.success) return badRequest("invalid_body", parsed.error.format());
 
-  const location = await prisma.location.create({
-    data: {
-      companyId: auth.session.user.companyId,
-      name: parsed.data.name,
-      address: parsed.data.address ?? null,
-      city: parsed.data.city ?? null,
-      state: parsed.data.state ?? null,
-      active: true,
-    },
-  });
+  let location;
+  try {
+    location = await prisma.location.create({
+      data: {
+        companyId: auth.session.user.companyId,
+        name: parsed.data.name,
+        address: parsed.data.address ?? null,
+        city: parsed.data.city ?? null,
+        state: parsed.data.state ?? null,
+        active: true,
+      },
+    });
+  } catch (e) {
+    if (
+      e instanceof Prisma.PrismaClientKnownRequestError &&
+      e.code === "P2002"
+    ) {
+      return badRequest("A location with that name already exists.");
+    }
+    throw e;
+  }
 
   // Create LocationProduct + Stock for ALL products (active and inactive).
   // Including inactive ensures rows are in place if a product is later reactivated.

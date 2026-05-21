@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireApiSession, badRequest, forbidden } from "@/lib/api";
 import { getCatalog } from "@/lib/catalog";
@@ -68,29 +69,40 @@ export async function POST(req: NextRequest) {
   const parsed = schema.safeParse(body);
   if (!parsed.success) return badRequest("invalid_body", parsed.error.format());
 
-  const product = await prisma.product.create({
-    data: {
-      companyId: user.companyId,
-      name: parsed.data.name,
-      sku: parsed.data.sku ?? null,
-      categoryId: parsed.data.categoryId ?? null,
-      unitId: parsed.data.unitId ?? null,
-      purchaseUnitId: parsed.data.purchaseUnitId ?? null,
-      unitsPerPurchase: parsed.data.unitsPerPurchase,
-      supplierId: parsed.data.supplierId ?? null,
-      unitCost: parsed.data.unitCost,
-      epaRegistration: parsed.data.epaRegistration ?? null,
-      activeIngredient: parsed.data.activeIngredient ?? null,
-      photoUrl: parsed.data.photoUrl ?? null,
-      requiresLicense: parsed.data.requiresLicense,
-      active: parsed.data.active ?? true,
-      licenses: {
-        create: parsed.data.licenseTypeIds.map((licenseTypeId) => ({
-          licenseTypeId,
-        })),
+  let product;
+  try {
+    product = await prisma.product.create({
+      data: {
+        companyId: user.companyId,
+        name: parsed.data.name,
+        sku: parsed.data.sku ?? null,
+        categoryId: parsed.data.categoryId ?? null,
+        unitId: parsed.data.unitId ?? null,
+        purchaseUnitId: parsed.data.purchaseUnitId ?? null,
+        unitsPerPurchase: parsed.data.unitsPerPurchase,
+        supplierId: parsed.data.supplierId ?? null,
+        unitCost: parsed.data.unitCost,
+        epaRegistration: parsed.data.epaRegistration ?? null,
+        activeIngredient: parsed.data.activeIngredient ?? null,
+        photoUrl: parsed.data.photoUrl ?? null,
+        requiresLicense: parsed.data.requiresLicense,
+        active: parsed.data.active ?? true,
+        licenses: {
+          create: parsed.data.licenseTypeIds.map((licenseTypeId) => ({
+            licenseTypeId,
+          })),
+        },
       },
-    },
-  });
+    });
+  } catch (e) {
+    if (
+      e instanceof Prisma.PrismaClientKnownRequestError &&
+      e.code === "P2002"
+    ) {
+      return badRequest("A product with that name already exists.");
+    }
+    throw e;
+  }
 
   // Make product available at all active locations by default
   const locations = await prisma.location.findMany({

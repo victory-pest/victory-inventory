@@ -129,6 +129,7 @@ function LocationDialog({
   const [state, setState] = useState(row?.state ?? "");
   const [active, setActive] = useState(row?.active ?? true);
   const [saving, setSaving] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   async function save() {
     if (name.trim().length === 0) {
@@ -157,7 +158,7 @@ function LocationDialog({
     setSaving(false);
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
-      toast.error(data.error || "Save failed");
+      setErrorMessage(data.error || "Save failed");
       return;
     }
     toast.success(row ? "Location updated" : "Location added");
@@ -166,6 +167,7 @@ function LocationDialog({
   }
 
   return (
+    <>
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent>
         <DialogHeader>
@@ -216,5 +218,28 @@ function LocationDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+
+    {errorMessage && (
+      <Dialog
+        open
+        onOpenChange={(o) => !o && setErrorMessage(null)}
+      >
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Could not save</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-brand-dark/80 py-2">{errorMessage}</p>
+          <DialogFooter>
+            <Button
+              onClick={() => setErrorMessage(null)}
+              className="bg-brand-primary hover:bg-brand-primary/90"
+            >
+              OK
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    )}
+    </>
   );
 }
