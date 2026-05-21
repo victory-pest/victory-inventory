@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Search, Sliders } from "lucide-react";
+import { Search, Sliders, MapPin } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,7 @@ import {
 import { cn } from "@/lib/utils";
 import type { InventoryRow } from "@/lib/inventory";
 import { AdjustModal } from "./AdjustModal";
+import { ProductLocationsDialog } from "@/components/products/ProductLocationsDialog";
 
 type Props = {
   rows: InventoryRow[];
@@ -40,6 +41,7 @@ export function InventoryTable({
   const [tab, setTab] = useState<string>("all");
   const [query, setQuery] = useState("");
   const [adjustRow, setAdjustRow] = useState<InventoryRow | null>(null);
+  const [settingsRow, setSettingsRow] = useState<InventoryRow | null>(null);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -102,7 +104,7 @@ export function InventoryTable({
                   Max
                 </TableHead>
                 <TableHead>Status</TableHead>
-                {canAdjust && <TableHead className="text-right">Adjust</TableHead>}
+                {canAdjust && <TableHead className="text-right">Actions</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -157,14 +159,25 @@ export function InventoryTable({
                     </TableCell>
                     {canAdjust && (
                       <TableCell className="text-right">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => setAdjustRow(r)}
-                        >
-                          <Sliders className="h-3.5 w-3.5 mr-1" />
-                          Adjust
-                        </Button>
+                        <div className="flex justify-end gap-1">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setAdjustRow(r)}
+                          >
+                            <Sliders className="h-3.5 w-3.5 mr-1" />
+                            Adjust
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setSettingsRow(r)}
+                            title="Per-location settings"
+                          >
+                            <MapPin className="h-3.5 w-3.5 mr-1" />
+                            Settings
+                          </Button>
+                        </div>
                       </TableCell>
                     )}
                   </TableRow>
@@ -183,6 +196,13 @@ export function InventoryTable({
           locationId={adjustRow.locationId}
           productName={adjustRow.productName}
           currentStock={adjustRow.stock}
+        />
+      )}
+
+      {settingsRow && (
+        <ProductLocationsDialog
+          product={{ id: settingsRow.productId, name: settingsRow.productName }}
+          onClose={() => setSettingsRow(null)}
         />
       )}
     </div>
