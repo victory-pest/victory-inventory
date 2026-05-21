@@ -72,19 +72,25 @@ export async function getInventoryView({
     where: scoped
       ? { locationId: { in: locationIds } }
       : { location: { companyId } },
-    select: { locationId: true, productId: true, minStock: true, maxStock: true },
+    select: { locationId: true, productId: true, minStock: true, maxStock: true, active: true },
   });
   const lpMap = new Map(
     lps.map((lp) => [
       `${lp.locationId}:${lp.productId}`,
-      { min: Number(lp.minStock), max: Number(lp.maxStock) },
+      { min: Number(lp.minStock), max: Number(lp.maxStock), active: lp.active },
     ]),
   );
 
   const rows: InventoryRow[] = stockRows
     .filter((s) => s.product) // safety
+    .filter((s) => {
+      // Hide product at locations where LocationProduct.active === false.
+      // If no LocationProduct row exists, default to visible (safety).
+      const lp = lpMap.get(`${s.locationId}:${s.productId}`);
+      return !lp || lp.active;
+    })
     .map((s) => {
-      const lp = lpMap.get(`${s.locationId}:${s.productId}`) ?? { min: 0, max: 0 };
+      const lp = lpMap.get(`${s.locationId}:${s.productId}`) ?? { min: 0, max: 0, active: true };
       const stock = Number(s.quantity);
       return {
         productId: s.product.id,
