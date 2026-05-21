@@ -126,7 +126,10 @@ export function ProductLocationsDialog({ product, onClose }: Props) {
   return (
     <>
       <Dialog open onOpenChange={(o) => !o && onClose()}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogContent
+          className="max-h-[90vh] overflow-y-auto"
+          style={{ maxWidth: "min(800px, 95vw)" }}
+        >
           <DialogHeader>
             <DialogTitle>
               Per-location settings: {product.name}
