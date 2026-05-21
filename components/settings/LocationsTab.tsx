@@ -224,7 +224,7 @@ function LocationDialog({
         open
         onOpenChange={(o) => !o && setErrorMessage(null)}
       >
-        <DialogContent className="max-w-md">
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Could not save</DialogTitle>
           </DialogHeader>

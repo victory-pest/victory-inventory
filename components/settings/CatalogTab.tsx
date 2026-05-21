@@ -311,7 +311,7 @@ function NamedDialog({
         open
         onOpenChange={(o) => !o && setErrorMessage(null)}
       >
-        <DialogContent className="max-w-md">
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Could not save</DialogTitle>
           </DialogHeader>
@@ -500,7 +500,7 @@ function UnitDialog({
         open
         onOpenChange={(o) => !o && setErrorMessage(null)}
       >
-        <DialogContent className="max-w-md">
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Could not save</DialogTitle>
           </DialogHeader>
@@ -714,7 +714,7 @@ function SupplierDialog({
         open
         onOpenChange={(o) => !o && setErrorMessage(null)}
       >
-        <DialogContent className="max-w-md">
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Could not save</DialogTitle>
           </DialogHeader>
@@ -997,7 +997,7 @@ function ProductDialog({
   return (
     <>
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{row ? "Edit product" : "Add product"}</DialogTitle>
         </DialogHeader>
@@ -1208,7 +1208,7 @@ function ProductDialog({
         open
         onOpenChange={(o) => !o && setErrorMessage(null)}
       >
-        <DialogContent className="max-w-md">
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Could not save</DialogTitle>
           </DialogHeader>

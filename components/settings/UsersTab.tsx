@@ -260,7 +260,7 @@ function UserDialog({
   return (
     <>
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>{row ? "Edit user" : "Add user"}</DialogTitle>
         </DialogHeader>
@@ -410,7 +410,7 @@ function UserDialog({
         open
         onOpenChange={(o) => !o && setErrorMessage(null)}
       >
-        <DialogContent className="max-w-md">
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Could not save user</DialogTitle>
           </DialogHeader>
