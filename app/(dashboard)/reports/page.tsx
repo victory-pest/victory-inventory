@@ -86,33 +86,49 @@ export default async function ReportsPage({
     user.role === "supervisor"
       ? locations.filter((l) => user.supervisedLocationIds.includes(l.id))
       : locations;
-  const effectiveLocationId =
-    user.role === "supervisor"
-      ? locationParam && availableLocations.some((l) => l.id === locationParam)
-        ? locationParam
-        : (user.supervisedLocationIds[0] ?? null)
-      : locationParam && locations.some((l) => l.id === locationParam)
-        ? locationParam
-        : null;
+  // Compute effective location IDs based on role and the user's filter selection.
+  // For supervisor: empty filter → all their supervised locations; specific pick → just that one.
+  // For manager / super_admin: empty filter → null (all company); specific pick → that one.
+  let effectiveLocationIds: string[] | null;
+  if (user.role === "supervisor") {
+    if (locationParam && user.supervisedLocationIds.includes(locationParam)) {
+      effectiveLocationIds = [locationParam];
+    } else if (user.supervisedLocationIds.length > 0) {
+      effectiveLocationIds = user.supervisedLocationIds;
+    } else {
+      effectiveLocationIds = null;
+    }
+  } else {
+    if (locationParam && locations.some((l) => l.id === locationParam)) {
+      effectiveLocationIds = [locationParam];
+    } else {
+      effectiveLocationIds = null;
+    }
+  }
 
   const result = await runReport(type, {
     companyId: user.companyId,
     role: user.role,
-    userLocationId:
-      user.role === "supervisor"
-        ? effectiveLocationId
-        : user.locationId ?? null,
     rangeStart: start,
     rangeEnd: end,
-    locationId: effectiveLocationId,
+    locationIds: effectiveLocationIds,
     activeFilter,
   });
 
-  const locationName = effectiveLocationId
-    ? locations.find((l) => l.id === effectiveLocationId)?.name ?? "—"
-    : user.role === "supervisor"
-      ? "Your location"
-      : "All locations";
+  let locationName: string;
+  if (!effectiveLocationIds) {
+    locationName = "All locations";
+  } else if (effectiveLocationIds.length === 1) {
+    locationName =
+      locations.find((l) => l.id === effectiveLocationIds[0])?.name ?? "—";
+  } else if (
+    user.role === "supervisor" &&
+    effectiveLocationIds.length === user.supervisedLocationIds.length
+  ) {
+    locationName = "All my locations";
+  } else {
+    locationName = `${effectiveLocationIds.length} locations`;
+  }
 
   let subtitle: string;
   if (def.needsDateRange) {
@@ -169,6 +185,9 @@ export default async function ReportsPage({
               }
               activeFilter={activeFilter}
               showActiveFilter={type === "catalog"}
+              allLabel={
+                user.role === "supervisor" ? "All my locations" : "All locations"
+              }
             />
           </div>
 

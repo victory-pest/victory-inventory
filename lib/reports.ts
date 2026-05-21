@@ -277,10 +277,11 @@ export function reportsForRole(role: Role): ReportDefinition[] {
 export type ReportFilters = {
   companyId: string;
   role: Role;
-  userLocationId: string | null;
   rangeStart: Date;
   rangeEnd: Date;
-  locationId: string | null;
+  // null = all company locations; array = filter to those specific locations.
+  // Empty array would produce no results (safe edge case).
+  locationIds: string[] | null;
   activeFilter?: "active" | "inactive" | "all";
 };
 
@@ -289,11 +290,6 @@ export type ReportRow = Record<string, string | number | null>;
 export type ReportResult = {
   rows: ReportRow[];
 };
-
-function effectiveLocation(filters: ReportFilters): string | null {
-  if (filters.role === "supervisor") return filters.userLocationId;
-  return filters.locationId;
-}
 
 export async function runReport(
   type: ReportType,
@@ -369,10 +365,9 @@ async function runCatalogReport(filters: ReportFilters): Promise<ReportResult> {
 }
 
 async function runStockReport(filters: ReportFilters): Promise<ReportResult> {
-  const locId = effectiveLocation(filters);
   const stocks = await prisma.stock.findMany({
     where: {
-      ...(locId ? { locationId: locId } : { location: { companyId: filters.companyId } }),
+      ...(filters.locationIds ? { locationId: { in: filters.locationIds } } : { location: { companyId: filters.companyId } }),
     },
     include: {
       product: {
@@ -389,8 +384,8 @@ async function runStockReport(filters: ReportFilters): Promise<ReportResult> {
     },
   });
   const lps = await prisma.locationProduct.findMany({
-    where: locId
-      ? { locationId: locId }
+    where: filters.locationIds
+      ? { locationId: { in: filters.locationIds } }
       : { location: { companyId: filters.companyId } },
     select: { locationId: true, productId: true, minStock: true, maxStock: true },
   });
@@ -460,11 +455,10 @@ async function runBelowMinReport(filters: ReportFilters): Promise<ReportResult> 
 }
 
 async function runRequestHistoryReport(filters: ReportFilters): Promise<ReportResult> {
-  const locId = effectiveLocation(filters);
   const requests = await prisma.request.findMany({
     where: {
       companyId: filters.companyId,
-      ...(locId ? { locationId: locId } : {}),
+      ...(filters.locationIds ? { locationId: { in: filters.locationIds } } : {}),
       createdAt: { gte: filters.rangeStart, lte: filters.rangeEnd },
     },
     include: {
@@ -491,11 +485,10 @@ async function runRequestHistoryReport(filters: ReportFilters): Promise<ReportRe
 }
 
 async function runReceptionLogReport(filters: ReportFilters): Promise<ReportResult> {
-  const locId = effectiveLocation(filters);
   const receptions = await prisma.reception.findMany({
     where: {
       companyId: filters.companyId,
-      ...(locId ? { locationId: locId } : {}),
+      ...(filters.locationIds ? { locationId: { in: filters.locationIds } } : {}),
       receptionDate: { gte: filters.rangeStart, lte: filters.rangeEnd },
     },
     include: {
@@ -528,7 +521,6 @@ async function runReceptionLogReport(filters: ReportFilters): Promise<ReportResu
 }
 
 async function runAdjustmentLogReport(filters: ReportFilters): Promise<ReportResult> {
-  const locId = effectiveLocation(filters);
 
   // Pull ALL movements (chronological) for the products with adjustments in range,
   // so we can replay running totals for before/after.
@@ -536,7 +528,7 @@ async function runAdjustmentLogReport(filters: ReportFilters): Promise<ReportRes
     where: {
       companyId: filters.companyId,
       movementType: "manual_adjustment",
-      ...(locId ? { locationId: locId } : {}),
+      ...(filters.locationIds ? { locationId: { in: filters.locationIds } } : {}),
       createdAt: { gte: filters.rangeStart, lte: filters.rangeEnd },
     },
     select: { locationId: true, productId: true },
@@ -582,7 +574,7 @@ async function runAdjustmentLogReport(filters: ReportFilters): Promise<ReportRes
       m.movementType === "manual_adjustment" &&
       m.createdAt >= filters.rangeStart &&
       m.createdAt <= filters.rangeEnd &&
-      (!locId || m.locationId === locId)
+      (!filters.locationIds || filters.locationIds.includes(m.locationId))
     ) {
       rows.push({
         date: m.createdAt.toISOString(),
@@ -601,11 +593,10 @@ async function runAdjustmentLogReport(filters: ReportFilters): Promise<ReportRes
 }
 
 async function runConsumptionTechReport(filters: ReportFilters): Promise<ReportResult> {
-  const locId = effectiveLocation(filters);
   const requests = await prisma.request.findMany({
     where: {
       companyId: filters.companyId,
-      ...(locId ? { locationId: locId } : {}),
+      ...(filters.locationIds ? { locationId: { in: filters.locationIds } } : {}),
       status: { in: ["approved", "picked_up"] },
       approvedAt: { gte: filters.rangeStart, lte: filters.rangeEnd },
     },
@@ -658,12 +649,11 @@ async function runConsumptionTechReport(filters: ReportFilters): Promise<ReportR
 }
 
 async function runConsumptionProductReport(filters: ReportFilters): Promise<ReportResult> {
-  const locId = effectiveLocation(filters);
   const items = await prisma.requestItem.findMany({
     where: {
       request: {
         companyId: filters.companyId,
-        ...(locId ? { locationId: locId } : {}),
+        ...(filters.locationIds ? { locationId: { in: filters.locationIds } } : {}),
         status: { in: ["approved", "picked_up"] },
         approvedAt: { gte: filters.rangeStart, lte: filters.rangeEnd },
       },
@@ -714,10 +704,9 @@ async function runConsumptionProductReport(filters: ReportFilters): Promise<Repo
 async function runInventoryValuationReport(
   filters: ReportFilters,
 ): Promise<ReportResult> {
-  const locId = effectiveLocation(filters);
   const stocks = await prisma.stock.findMany({
-    where: locId
-      ? { locationId: locId }
+    where: filters.locationIds
+      ? { locationId: { in: filters.locationIds } }
       : { location: { companyId: filters.companyId } },
     include: {
       product: {
@@ -752,8 +741,8 @@ async function runMostRequestedReport(filters: ReportFilters): Promise<ReportRes
     where: {
       request: {
         companyId: filters.companyId,
-        ...(effectiveLocation(filters)
-          ? { locationId: effectiveLocation(filters)! }
+        ...(filters.locationIds
+          ? { locationId: { in: filters.locationIds } }
           : {}),
         createdAt: { gte: filters.rangeStart, lte: filters.rangeEnd },
       },
@@ -799,11 +788,10 @@ async function runMostRequestedReport(filters: ReportFilters): Promise<ReportRes
 }
 
 async function runWasteShrinkageReport(filters: ReportFilters): Promise<ReportResult> {
-  const locId = effectiveLocation(filters);
   const counts = await prisma.physicalCount.findMany({
     where: {
       companyId: filters.companyId,
-      ...(locId ? { locationId: locId } : {}),
+      ...(filters.locationIds ? { locationId: { in: filters.locationIds } } : {}),
       countDate: { gte: filters.rangeStart, lte: filters.rangeEnd },
     },
     include: {
@@ -910,13 +898,17 @@ async function runLocationComparisonReport(
 async function runTransferHistoryReport(
   filters: ReportFilters,
 ): Promise<ReportResult> {
-  const locId = effectiveLocation(filters);
   const transfers = await prisma.transfer.findMany({
     where: {
       companyId: filters.companyId,
       createdAt: { gte: filters.rangeStart, lte: filters.rangeEnd },
-      ...(locId
-        ? { OR: [{ fromLocationId: locId }, { toLocationId: locId }] }
+      ...(filters.locationIds
+        ? {
+            OR: [
+              { fromLocationId: { in: filters.locationIds } },
+              { toLocationId: { in: filters.locationIds } },
+            ],
+          }
         : {}),
     },
     include: {

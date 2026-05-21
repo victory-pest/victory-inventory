@@ -26,6 +26,7 @@ type Props = {
   showLocation: boolean;
   activeFilter?: "active" | "inactive" | "all";
   showActiveFilter?: boolean;
+  allLabel?: string;
 };
 
 const presets: { value: DateRangePreset; label: string }[] = [
@@ -47,6 +48,7 @@ export function ReportFilters({
   showLocation,
   activeFilter,
   showActiveFilter,
+  allLabel,
 }: Props) {
   const router = useRouter();
   const pathname = usePathname();
@@ -139,7 +141,7 @@ export function ReportFilters({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All locations</SelectItem>
+              <SelectItem value="all">{allLabel ?? "All locations"}</SelectItem>
               {locations.map((l) => (
                 <SelectItem key={l.id} value={l.id}>
                   {l.name}
