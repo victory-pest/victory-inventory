@@ -1,8 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
-import { Bell } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { UserMenu } from "./UserMenu";
+import { NotificationBell } from "./NotificationBell";
 import type { Role } from "@/lib/nav";
 
 type Props = {
@@ -50,26 +49,7 @@ export function Header({
         </div>
 
         <div className="flex items-center gap-1">
-          <Button
-            asChild
-            variant="ghost"
-            size="icon"
-            aria-label={
-              unreadCount > 0
-                ? `Notifications (${unreadCount} unread)`
-                : "Notifications"
-            }
-            className="text-brand-dark/70 hover:text-brand-dark relative"
-          >
-            <Link href="/notifications">
-              <Bell className="h-5 w-5" />
-              {unreadCount > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 min-w-[1.1rem] h-[1.1rem] rounded-full bg-brand-error text-white text-[10px] font-semibold flex items-center justify-center px-1 leading-none">
-                  {unreadCount > 9 ? "9+" : unreadCount}
-                </span>
-              )}
-            </Link>
-          </Button>
+          <NotificationBell initialUnreadCount={unreadCount} />
 
           <div className="md:hidden">
             <UserMenu
