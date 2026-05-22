@@ -9,7 +9,7 @@ const schema = z.object({
   items: z.array(
     z.object({
       itemId: z.string().min(1),
-      quantityApproved: z.number().nonnegative(),
+      quantityApproved: z.number().int().nonnegative(),
     }),
   ),
 });
