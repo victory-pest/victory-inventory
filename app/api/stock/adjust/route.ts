@@ -8,7 +8,7 @@ import { checkLowStockCrossings } from "@/lib/notify";
 const schema = z.object({
   locationId: z.string().min(1),
   productId: z.string().min(1),
-  delta: z.number(),
+  delta: z.number().int(),
   reason: z.string().min(1).max(120),
   note: z.string().max(500).optional().nullable(),
 });

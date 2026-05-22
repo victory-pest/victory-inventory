@@ -45,7 +45,7 @@ const schema = z.object({
     .array(
       z.object({
         productId: z.string().min(1),
-        quantity: z.number().positive(),
+        quantity: z.number().int().positive(),
         unitCost: z.number().min(0).default(0),
       }),
     )

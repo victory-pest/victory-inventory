@@ -15,7 +15,7 @@ const createSchema = z.object({
     .array(
       z.object({
         productId: z.string().min(1),
-        quantity: z.number().positive(),
+        quantity: z.number().int().positive(),
       }),
     )
     .min(1),
