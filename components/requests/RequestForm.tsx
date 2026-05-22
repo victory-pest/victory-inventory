@@ -13,6 +13,7 @@ import {
   Loader2,
   Package,
   Check,
+  ChevronRight,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -239,6 +240,7 @@ export function RequestForm({ products, categories }: Props) {
                   if (entry) toggleCartUnit(p.id, ut);
                   else setQty(p.id, 1, ut);
                 }}
+                onViewCart={() => setCartOpen(true)}
               />
             );
           })}
@@ -449,12 +451,14 @@ function ProductRow({
   unitType,
   onChange,
   onToggleUnit,
+  onViewCart,
 }: {
   product: CatalogProduct;
   quantity: number;
   unitType: "stock" | "purchase";
   onChange: (q: number) => void;
   onToggleUnit: (ut: "stock" | "purchase") => void;
+  onViewCart: () => void;
 }) {
   const outOfStock = product.stock <= 0;
   const dualUnit = !!(product.purchaseUnit && product.unitsPerPurchase > 1);
@@ -516,10 +520,16 @@ function ProductRow({
 
         <div className="flex items-center justify-between gap-2">
           {inCart ? (
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-primary px-3 py-1 text-xs font-semibold text-white">
+            <Button
+              type="button"
+              size="sm"
+              onClick={onViewCart}
+              className="h-8 gap-1 bg-brand-primary text-white hover:bg-brand-primary/90 shadow-sm whitespace-nowrap"
+            >
               <Check className="h-3.5 w-3.5" />
-              In cart
-            </span>
+              Add to cart
+              <ChevronRight className="h-3.5 w-3.5 -mr-1" />
+            </Button>
           ) : (
             <span
               className={cn(
