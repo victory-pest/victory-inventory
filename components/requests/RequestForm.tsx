@@ -476,12 +476,6 @@ function ProductRow({
         inCart && "border-brand-primary border-2 bg-brand-primary/5",
       )}
     >
-      {inCart && (
-        <span className="absolute -top-2 right-3 z-10 inline-flex items-center gap-1 rounded-full bg-brand-primary px-2 py-0.5 text-[10px] font-semibold text-white shadow-sm">
-          <Check className="h-3 w-3" />
-          In cart
-        </span>
-      )}
       <CardContent className="p-3 space-y-2.5">
         <div className="flex gap-3">
           <div className="shrink-0 w-16 h-16 rounded-md overflow-hidden bg-brand-bg flex items-center justify-center border border-border">
@@ -520,20 +514,33 @@ function ProductRow({
           </div>
         </div>
 
-        <div className="flex items-center justify-between">
-          <span
-            className={cn(
-              "text-xs font-semibold",
-              outOfStock ? "text-brand-error" : "text-brand-dark/70",
-            )}
-          >
-            {outOfStock
-              ? "Out of stock"
-              : dualUnit
-                ? `${product.stock} ${stockUnitLabel} / ${stockInPurch} ${purchUnitLabel} in stock`
-                : `${product.stock} ${stockUnitLabel} in stock`}
-          </span>
-          {quantity === 0 ? (
+        <div className="flex items-center justify-between gap-2">
+          {inCart ? (
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-primary px-3 py-1 text-xs font-semibold text-white">
+              <Check className="h-3.5 w-3.5" />
+              In cart
+            </span>
+          ) : (
+            <span
+              className={cn(
+                "text-xs font-semibold",
+                outOfStock ? "text-brand-error" : "text-brand-dark/70",
+              )}
+            >
+              {outOfStock
+                ? "Out of stock"
+                : dualUnit
+                  ? `${product.stock} ${stockUnitLabel} / ${stockInPurch} ${purchUnitLabel} in stock`
+                  : `${product.stock} ${stockUnitLabel} in stock`}
+            </span>
+          )}
+          {inCart ? (
+            <QtyStepper
+              value={quantity}
+              max={maxInUnit}
+              onChange={onChange}
+            />
+          ) : (
             <Button
               size="sm"
               variant="outline"
@@ -547,12 +554,6 @@ function ProductRow({
               <Plus className="h-3.5 w-3.5" />
               Add to cart
             </Button>
-          ) : (
-            <QtyStepper
-              value={quantity}
-              max={maxInUnit}
-              onChange={onChange}
-            />
           )}
         </div>
         {dualUnit && !outOfStock && (
