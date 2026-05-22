@@ -12,6 +12,7 @@ import {
   AlertTriangle,
   Loader2,
   Package,
+  Check,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -245,7 +246,7 @@ export function RequestForm({ products, categories }: Props) {
       )}
 
       <Sheet open={cartOpen} onOpenChange={setCartOpen}>
-        <div className="fixed inset-x-0 bottom-16 md:bottom-0 z-30 md:left-64">
+        <div className="fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] md:bottom-0 z-30 md:left-64">
           <SheetTrigger asChild>
             <button
               type="button"
@@ -465,8 +466,22 @@ function ProductRow({
   const stockInPurch = dualUnit ? Math.floor(product.stock / conv) : 0;
   const maxInUnit = unitType === "purchase" && dualUnit ? stockInPurch : product.stock;
 
+  const inCart = quantity > 0;
+
   return (
-    <Card className={cn(outOfStock && "opacity-60")}>
+    <Card
+      className={cn(
+        "relative transition-colors",
+        outOfStock && "opacity-60",
+        inCart && "border-brand-primary border-2 bg-brand-primary/5",
+      )}
+    >
+      {inCart && (
+        <span className="absolute -top-2 right-3 z-10 inline-flex items-center gap-1 rounded-full bg-brand-primary px-2 py-0.5 text-[10px] font-semibold text-white shadow-sm">
+          <Check className="h-3 w-3" />
+          In cart
+        </span>
+      )}
       <CardContent className="p-3 space-y-2.5">
         <div className="flex gap-3">
           <div className="shrink-0 w-16 h-16 rounded-md overflow-hidden bg-brand-bg flex items-center justify-center border border-border">
@@ -522,12 +537,15 @@ function ProductRow({
             <Button
               size="sm"
               variant="outline"
-              onClick={() => onChange(1)}
+              onClick={() => {
+                onChange(1);
+                toast.success(`${product.name} added to cart`);
+              }}
               disabled={outOfStock}
               className="h-8 gap-1"
             >
               <Plus className="h-3.5 w-3.5" />
-              Add
+              Add to cart
             </Button>
           ) : (
             <QtyStepper

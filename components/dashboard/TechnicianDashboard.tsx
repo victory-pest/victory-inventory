@@ -50,7 +50,7 @@ export function TechnicianDashboard({ userName, locationName }: Props) {
 
       <Button
         asChild
-        className="fixed bottom-20 right-4 md:bottom-8 md:right-8 h-14 w-14 rounded-full bg-brand-primary hover:bg-brand-primary/90 shadow-lg p-0 z-20"
+        className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-4 md:bottom-8 md:right-8 h-14 w-14 rounded-full bg-brand-primary hover:bg-brand-primary/90 shadow-lg p-0 z-20"
         aria-label="New request"
       >
         <Link href="/requests/new">
