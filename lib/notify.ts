@@ -124,7 +124,9 @@ async function findSupervisorsAndManagers(companyId: string, locationId: string 
       active: true,
       OR: [
         { role: "manager" },
-        locationId ? { role: "supervisor", locationId } : { role: "supervisor" },
+        locationId
+          ? { role: "supervisor", supervisedLocationIds: { has: locationId } }
+          : { role: "supervisor" },
       ],
     },
     select: { id: true },
