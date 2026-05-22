@@ -214,10 +214,12 @@ export function TransferForm({
                     <Input
                       type="number"
                       min={0}
-                      step="0.01"
+                      step="1"
                       value={line.quantity}
                       onChange={(e) =>
-                        setLine(idx, { quantity: Number(e.target.value) || 0 })
+                        setLine(idx, {
+                          quantity: Math.round(Number(e.target.value)) || 0,
+                        })
                       }
                       className={over ? "border-brand-error" : ""}
                     />

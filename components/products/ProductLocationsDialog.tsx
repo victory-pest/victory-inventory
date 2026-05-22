@@ -167,14 +167,14 @@ export function ProductLocationsDialog({ product, onClose }: Props) {
                         <TableCell className="text-right">
                           <Input
                             type="number"
-                            step="0.01"
+                            step="1"
                             min={0}
                             value={s.min}
                             onChange={(e) =>
                               updateSetting(
                                 loc.id,
                                 "min",
-                                Number(e.target.value) || 0,
+                                Math.round(Number(e.target.value)) || 0,
                               )
                             }
                             className="w-24 ml-auto text-right"
@@ -183,14 +183,14 @@ export function ProductLocationsDialog({ product, onClose }: Props) {
                         <TableCell className="text-right">
                           <Input
                             type="number"
-                            step="0.01"
+                            step="1"
                             min={0}
                             value={s.max}
                             onChange={(e) =>
                               updateSetting(
                                 loc.id,
                                 "max",
-                                Number(e.target.value) || 0,
+                                Math.round(Number(e.target.value)) || 0,
                               )
                             }
                             className={cn(

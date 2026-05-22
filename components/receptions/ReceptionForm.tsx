@@ -108,7 +108,9 @@ export function ReceptionForm({
     setLine(idx, {
       unitType: newType,
       quantity:
-        newType === "stock" ? line.quantity * conv : line.quantity / conv,
+        newType === "stock"
+          ? Math.round(line.quantity * conv)
+          : Math.round(line.quantity / conv),
       unitCost:
         newType === "stock" ? line.unitCost / conv : line.unitCost * conv,
     });
@@ -270,10 +272,12 @@ export function ReceptionForm({
                   <Input
                     type="number"
                     min={0}
-                    step="0.01"
+                    step="1"
                     value={line.quantity}
                     onChange={(e) =>
-                      setLine(idx, { quantity: Number(e.target.value) || 0 })
+                      setLine(idx, {
+                        quantity: Math.round(Number(e.target.value)) || 0,
+                      })
                     }
                   />
                 </div>

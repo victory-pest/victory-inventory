@@ -104,9 +104,9 @@ export function AdjustModal({
             <Label>Delta (+/-)</Label>
             <Input
               type="number"
-              step="0.01"
+              step="1"
               value={delta}
-              onChange={(e) => setDelta(Number(e.target.value) || 0)}
+              onChange={(e) => setDelta(Math.round(Number(e.target.value)) || 0)}
             />
             <p
               className={
